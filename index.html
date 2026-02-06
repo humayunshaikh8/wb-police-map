@@ -1,78 +1,161 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8" />
-<title>WB Police Live Map</title>
+    <title>WB Police Live Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-<style>
-  body { margin:0; }
-  #map { height:100vh; width:100%; }
-  .legend {
-    background:white;
-    padding:10px;
-    line-height:18px;
-    color:#333;
-    font-weight:bold;
-  }
-</style>
+    <!-- Marker Cluster -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+    <style>
+        body { margin:0; padding:0; }
+        #map { height: 100vh; width: 100vw; }
+
+        .control-box {
+            background: white;
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.2);
+            font-size: 14px;
+        }
+
+        .legend {
+            line-height: 22px;
+        }
+
+        select, input {
+            margin-top: 5px;
+            width: 100%;
+            padding: 4px;
+        }
+    </style>
 </head>
 <body>
 
 <div id="map"></div>
 
 <script>
-const map = L.map('map').setView([22.5, 88.3], 8);
+const map = L.map('map').setView([22.8, 88.3], 7);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
+    attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Google Sheets JSON endpoint
-const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?output=tsv";
+L.control.scale().addTo(map);
 
-fetch(sheetURL)
-  .then(response => response.text())
-  .then(text => {
-      const rows = text.split("\n").slice(1); // Skip header row
+// Marker Cluster Group
+const markers = L.markerClusterGroup();
+map.addLayer(markers);
 
-      rows.forEach(row => {
-          const cols = row.split("\t");
+let allMarkers = [];
 
-          let caption = cols[0];   // column R
-          let lat = parseFloat(cols[1]); // column S
-          let lon = parseFloat(cols[2]); // column T
-          let hq = cols[3];        // column U
+// Icon Colors
+function getIcon(type) {
+    let color = "red";
+    if (type === "PS") color = "blue";
+    else if (type === "HQ") color = "green";
+    else if (type === "ROP") color = "yellow";
+    else if (type === "IC") color = "violet";
+    else if (type === "CAMP") color = "orange";
 
-          if (isNaN(lat) || isNaN(lon)) return;
+    return L.icon({
+        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
+        shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+    });
+}
 
-          let colorMap = {
-              "HQ": "red",
-              "PS": "blue",
-              "TG": "orange",
-              "OP": "green",
-              "TOP": "violet",
-              "ROP": "gold",
-              "BOP": "black",
-              "CAMP": "grey",
-              "IC": "brown",
-              "STG": "pink"
-          };
+// Load TSV Data
+fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/gviz/tq?tqx=out:tsv")
+.then(res => res.text())
+.then(data => {
+    const rows = data.split("\n").slice(1);
 
-          let icon = L.AwesomeMarkers.icon({
-              icon: 'info-sign',
-              markerColor: colorMap[hq] || "cadetblue",
-              prefix: 'glyphicon'
-          });
+    rows.forEach(row => {
+        const cols = row.split("\t");
 
-          L.marker([lat, lon], { icon })
-            .addTo(map)
-            .bindPopup(`<b>${caption}</b><br>Type: ${hq}`);
-      });
-  });
+        const caption = cols[cols.length - 4];
+        const lat = parseFloat(cols[cols.length - 3]);
+        const lon = parseFloat(cols[cols.length - 2]);
+        const type = cols[cols.length - 1]?.trim();
+
+        // Strong coordinate validation
+        if (
+            !isNaN(lat) &&
+            !isNaN(lon) &&
+            lat > 20 && lat < 28 &&
+            lon > 85 && lon < 90
+        ) {
+            const marker = L.marker([lat, lon], { icon: getIcon(type) })
+                .bindPopup(`<b>${caption}</b><br>Type: ${type}`);
+
+            marker.type = type;
+            allMarkers.push(marker);
+            markers.addLayer(marker);
+        }
+    });
+});
+
+// 🔍 Search Control
+const searchControl = L.control({position: 'topleft'});
+searchControl.onAdd = function () {
+    const div = L.DomUtil.create('div', 'control-box');
+    div.innerHTML = '<b>Search Location</b><input type="text" id="searchBox" placeholder="Enter name...">';
+    return div;
+};
+searchControl.addTo(map);
+
+document.addEventListener("input", function(e){
+    if (e.target.id === "searchBox") {
+        const text = e.target.value.toLowerCase();
+        markers.clearLayers();
+        allMarkers.forEach(m => {
+            if (m.getPopup().getContent().toLowerCase().includes(text)) {
+                markers.addLayer(m);
+            }
+        });
+    }
+});
+
+// 🎛 Filter Control
+const filterControl = L.control({position: 'topright'});
+filterControl.onAdd = function () {
+    const div = L.DomUtil.create('div', 'control-box legend');
+    div.innerHTML = `<b>Filter Type</b>
+        <select id="typeFilter">
+            <option value="ALL">All</option>
+            <option value="PS">PS</option>
+            <option value="HQ">HQ</option>
+            <option value="ROP">ROP</option>
+            <option value="IC">IC</option>
+            <option value="CAMP">CAMP</option>
+        </select>`;
+    return div;
+};
+filterControl.addTo(map);
+
+document.addEventListener("change", function(e){
+    if (e.target.id === "typeFilter") {
+        const selected = e.target.value;
+        markers.clearLayers();
+        allMarkers.forEach(m => {
+            if (selected === "ALL" || m.type === selected) {
+                markers.addLayer(m);
+            }
+        });
+    }
+});
 </script>
+
 </body>
 </html>
