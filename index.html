@@ -115,7 +115,7 @@ body { margin:0; font-family: 'Segoe UI', sans-serif; }
 
 <script>
 
-// MAP INIT
+// ---------------- MAP SETUP ----------------
 var map = L.map('map').setView([23.5, 87.5], 7);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -128,9 +128,11 @@ map.addLayer(markers);
 // 🔁 YOUR TSV LINK
 var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv";
 
-// 🎯 ICONS
+
+// ---------------- ICON STYLE ----------------
 function getIcon(type){
     var color="blue";
+
     if(type=="PS") color="red";
     else if(type=="ROP") color="green";
     else if(type=="IC") color="blue";
@@ -147,58 +149,46 @@ function getIcon(type){
     });
 }
 
-// 🔍 FIND COLUMN INDEX SAFELY
-function findIndex(headers, names){
-    for(let n of names){
-        let idx = headers.findIndex(h => h.trim().toLowerCase() === n);
-        if(idx !== -1) return idx;
-    }
-    return -1;
-}
 
-// 📡 LOAD DATA
+// ---------------- LOAD TSV ----------------
 fetch(sheetURL)
-.then(r => r.text())
+.then(response => response.text())
 .then(data => {
 
     var rows = data.trim().split("\n");
-    var headers = rows[0].split("\t").map(h => h.trim().toLowerCase());
-
-    var captionIndex = findIndex(headers, ["caption","name"]);
-    var latIndex = findIndex(headers, ["lat","latitude"]);
-    var lonIndex = findIndex(headers, ["lon","lng","longitude"]);
-    var typeIndex = findIndex(headers, ["hq","type","category"]);
-
-    console.log("Detected columns:", captionIndex, latIndex, lonIndex, typeIndex);
 
     var typesSet = new Set();
 
     for(var i=1; i<rows.length; i++){
         var cols = rows[i].split("\t");
 
-        var caption = cols[captionIndex] ? cols[captionIndex].trim() : "";
-        var lat = parseFloat(cols[latIndex]);
-        var lon = parseFloat(cols[lonIndex]);
-        var type = cols[typeIndex] ? cols[typeIndex].trim() : "Unit";
+        // ---- COLUMN MAPPING (OLD LOGIC) ----
+        var caption = cols[17] ? cols[17].trim() : "";   // Column R
+        var lat = parseFloat(cols[18]);                  // Column S
+        var lon = parseFloat(cols[19]);                  // Column T
+        var type = cols[1] ? cols[1].trim() : "Unit";    // ⭐ Column B for filter
 
-        // 🚫 Skip bad rows
+        // ---- SKIP INVALID COORDINATES ----
         if(!caption || isNaN(lat) || isNaN(lon)) continue;
 
         typesSet.add(type);
 
-        var marker = L.marker([lat,lon],{icon:getIcon(type), unitType:type})
-            .bindPopup(`
-                <div class="popup-card">
-                    <div class="popup-title">${caption}</div>
-                    <div class="popup-type">${type}</div>
-                </div>
-            `);
+        var marker = L.marker([lat,lon],{
+            icon:getIcon(type),
+            unitType:type
+        }).bindPopup(`
+            <div class="popup-card">
+                <div class="popup-title">${caption}</div>
+                <div class="popup-type">${type}</div>
+            </div>
+        `);
 
         markers.addLayer(marker);
     }
 
-    // FILTER DROPDOWN
+    // ---------------- FILTER DROPDOWN ----------------
     var filter = document.getElementById("typeFilter");
+
     typesSet.forEach(t=>{
         var opt = document.createElement("option");
         opt.value = t;
@@ -206,6 +196,44 @@ fetch(sheetURL)
         filter.appendChild(opt);
     });
 
+});
+
+
+// ---------------- FILTER FUNCTION ----------------
+document.getElementById("typeFilter").addEventListener("change", function(){
+    var selected = this.value;
+
+    markers.clearLayers();
+
+    fetch(sheetURL)
+    .then(r => r.text())
+    .then(data => {
+        var rows = data.trim().split("\n");
+
+        for(var i=1; i<rows.length; i++){
+            var cols = rows[i].split("\t");
+
+            var caption = cols[17] ? cols[17].trim() : "";
+            var lat = parseFloat(cols[18]);
+            var lon = parseFloat(cols[19]);
+            var type = cols[1] ? cols[1].trim() : "Unit";
+
+            if(!caption || isNaN(lat) || isNaN(lon)) continue;
+            if(selected !== "all" && type !== selected) continue;
+
+            var marker = L.marker([lat,lon],{
+                icon:getIcon(type),
+                unitType:type
+            }).bindPopup(`
+                <div class="popup-card">
+                    <div class="popup-title">${caption}</div>
+                    <div class="popup-type">${type}</div>
+                </div>
+            `);
+
+            markers.addLayer(marker);
+        }
+    });
 });
 </script>
 </body>
