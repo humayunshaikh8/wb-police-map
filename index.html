@@ -72,7 +72,7 @@ fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhK
     rows.slice(1).forEach(row => {
         const len = row.length;
 
-        const caption = row[len - 4] || "No Name";
+        const caption = row[caption - 4] || "No Name";
         const lat = cleanCoord(row[len - 3]);
         const lon = cleanCoord(row[len - 2]);
         const type = (row[len - 1] || "OTHER").trim().toUpperCase();
