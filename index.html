@@ -38,8 +38,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 const markers = L.markerClusterGroup();
 map.addLayer(markers);
 
-let allMarkers = [];
-
 function getIcon(type) {
     let color = "red";
     if (type === "PS") color = "blue";
@@ -58,29 +56,34 @@ function getIcon(type) {
     });
 }
 
-// Load TSV
+// 🔥 FUNCTION TO CLEAN ANY COORDINATE FORMAT
+function cleanCoord(value) {
+    if (!value) return NaN;
+
+    // Remove degree symbols, commas, N/E/W/S, quotes etc
+    value = value.replace(/[^\d\.\-]/g, '');
+
+    return parseFloat(value);
+}
+
 fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/gviz/tq?tqx=out:tsv")
 .then(res => res.text())
 .then(data => {
     const rows = data.trim().split("\n").map(r => r.split("\t"));
-    const headers = rows[0];
+    const headers = rows[0].map(h => h.toLowerCase());
 
-    const latIndex = headers.findIndex(h => h.toLowerCase().includes("lat"));
-    const lonIndex = headers.findIndex(h => h.toLowerCase().includes("lon"));
-    const captionIndex = headers.findIndex(h => h.toLowerCase().includes("caption"));
-    const typeIndex = headers.findIndex(h => h.toLowerCase().includes("hq"));
-
-    if (latIndex === -1 || lonIndex === -1) {
-        alert("Latitude or Longitude column not found!");
-        return;
-    }
+    const latIndex = headers.findIndex(h => h.includes("lat"));
+    const lonIndex = headers.findIndex(h => h.includes("lon"));
+    const captionIndex = headers.findIndex(h => h.includes("caption"));
+    const typeIndex = headers.findIndex(h => h.includes("hq"));
 
     rows.slice(1).forEach(row => {
-        const lat = parseFloat(row[latIndex]);
-        const lon = parseFloat(row[lonIndex]);
+        const lat = cleanCoord(row[latIndex]);
+        const lon = cleanCoord(row[lonIndex]);
         const caption = row[captionIndex] || "No Name";
         const type = (row[typeIndex] || "OTHER").trim();
 
+        // West Bengal bounds filter
         if (
             !isNaN(lat) &&
             !isNaN(lon) &&
@@ -88,15 +91,12 @@ fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhK
             lon > 85 && lon < 90
         ) {
             const marker = L.marker([lat, lon], { icon: getIcon(type) })
-                .bindPopup(`<b>${caption}</b><br>Type: ${type}`);
+                .bindPopup(`<b>${caption}</b><br>Type: ${type}<br>Lat: ${lat}<br>Lon: ${lon}`);
 
-            marker.type = type;
-            allMarkers.push(marker);
             markers.addLayer(marker);
         }
     });
 });
-
 </script>
 
 </body>
