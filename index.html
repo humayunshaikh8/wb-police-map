@@ -32,7 +32,7 @@
 const map = L.map('map').setView([22.8, 88.3], 7);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
+    attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
 const markers = L.markerClusterGroup();
@@ -45,6 +45,9 @@ function getIcon(type) {
     else if (type === "ROP") color = "yellow";
     else if (type === "IC") color = "violet";
     else if (type === "CAMP") color = "orange";
+    else if (type === "TG") color = "grey";
+    else if (type === "TOP") color = "black";
+    else if (type === "BOP") color = "gold";
 
     return L.icon({
         iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
@@ -56,34 +59,24 @@ function getIcon(type) {
     });
 }
 
-// 🔥 FUNCTION TO CLEAN ANY COORDINATE FORMAT
 function cleanCoord(value) {
     if (!value) return NaN;
-
-    // Remove degree symbols, commas, N/E/W/S, quotes etc
-    value = value.replace(/[^\d\.\-]/g, '');
-
-    return parseFloat(value);
+    return parseFloat(value.replace(/[^\d.\-]/g, ''));
 }
 
-fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/gviz/tq?tqx=out:tsv")
+fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv")
 .then(res => res.text())
 .then(data => {
     const rows = data.trim().split("\n").map(r => r.split("\t"));
-    const headers = rows[0].map(h => h.toLowerCase());
-
-    const latIndex = headers.findIndex(h => h.includes("lat"));
-    const lonIndex = headers.findIndex(h => h.includes("lon"));
-    const captionIndex = headers.findIndex(h => h.includes("caption"));
-    const typeIndex = headers.findIndex(h => h.includes("hq"));
 
     rows.slice(1).forEach(row => {
-        const lat = cleanCoord(row[latIndex]);
-        const lon = cleanCoord(row[lonIndex]);
-        const caption = row[captionIndex] || "No Name";
-        const type = (row[typeIndex] || "OTHER").trim();
+        const len = row.length;
 
-        // West Bengal bounds filter
+        const caption = row[len - 4] || "No Name";
+        const lat = cleanCoord(row[len - 3]);
+        const lon = cleanCoord(row[len - 2]);
+        const type = (row[len - 1] || "OTHER").trim().toUpperCase();
+
         if (
             !isNaN(lat) &&
             !isNaN(lon) &&
@@ -96,6 +89,12 @@ fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhK
             markers.addLayer(marker);
         }
     });
+
+    if (markers.getLayers().length > 0) {
+        map.fitBounds(markers.getBounds());
+    } else {
+        alert("No valid coordinates found in last 4 columns.");
+    }
 });
 </script>
 
