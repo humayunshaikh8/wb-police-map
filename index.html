@@ -84,7 +84,7 @@ fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhK
             lon > 85 && lon < 90
         ) {
             const marker = L.marker([lat, lon], { icon: getIcon(type) })
-                .bindPopup(`<b>${caption}</b><br>Type: ${type}<br>Lat: ${caption}<br>Lon: ${lon}`);
+                .bindPopup(`<b>${caption}</b><br>Type: ${type}<br>Lat: ${"yyyy"}<br>Lon: ${lon}`);
 
             markers.addLayer(marker);
         }
