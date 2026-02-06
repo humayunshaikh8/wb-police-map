@@ -1,78 +1,42 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>WB Police Live Location Map</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WB Police Live Unit Map</title>
 
-<!-- Leaflet Core -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
-<!-- Marker Cluster -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
 
-<!-- Search Control -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
-
 <style>
-body { margin:0; font-family: 'Segoe UI', sans-serif; }
+body { margin:0; font-family:'Segoe UI',sans-serif; }
+#map { height:100vh; }
 
-#map { height:100vh; width:100%; }
-
-.topbar {
+.header {
     position:absolute;
-    top:10px;
-    left:50%;
-    transform:translateX(-50%);
+    top:10px; left:50%; transform:translateX(-50%);
     background:linear-gradient(90deg,#0d47a1,#1976d2);
-    color:white;
-    padding:10px 25px;
-    border-radius:30px;
-    font-weight:600;
-    font-size:18px;
-    z-index:999;
-    box-shadow:0 4px 10px rgba(0,0,0,0.25);
+    color:white; padding:10px 24px;
+    border-radius:30px; font-weight:600;
+    box-shadow:0 4px 12px rgba(0,0,0,0.3);
+    z-index:1000;
 }
 
-.legend {
-    position:absolute;
-    bottom:20px;
-    left:20px;
-    background:white;
-    padding:12px 15px;
-    border-radius:10px;
+.legend, .filterBox {
+    position:absolute; background:white;
+    padding:12px; border-radius:10px;
     box-shadow:0 4px 10px rgba(0,0,0,0.2);
-    font-size:13px;
-    z-index:999;
+    z-index:1000;
 }
 
-.legend div { margin-bottom:6px; }
+.legend { bottom:20px; left:20px; font-size:13px; }
+.filterBox { top:80px; left:20px; }
 
-.filter-box {
-    position:absolute;
-    top:80px;
-    left:20px;
-    background:white;
-    padding:12px;
-    border-radius:10px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.2);
-    z-index:999;
-}
-
-.filter-box select {
-    width:160px;
-    padding:6px;
-    border-radius:6px;
-    border:1px solid #ccc;
-}
-
-/* Popup Premium Style */
 .popup-card { min-width:180px; }
 .popup-title {
-    font-weight:700;
-    font-size:16px;
-    color:#0d47a1;
-    margin-bottom:6px;
+    font-weight:700; font-size:16px;
+    color:#0d47a1; margin-bottom:6px;
 }
 .popup-type {
     display:inline-block;
@@ -88,33 +52,31 @@ body { margin:0; font-family: 'Segoe UI', sans-serif; }
 
 <body>
 
-<div class="topbar">🚓 WB Police Live Unit Map</div>
+<div class="header">🚓 WB Police Live Unit Map</div>
 
-<div class="filter-box">
-    <b>Filter by Type</b><br>
-    <select id="typeFilter">
-        <option value="ALL">All Units</option>
-    </select>
+<div class="filterBox">
+<b>Filter by Unit Type</b><br>
+<select id="typeFilter">
+<option value="ALL">All Units</option>
+</select>
 </div>
 
 <div class="legend">
-    <b>Legend</b>
-    <div>🔴 PS</div>
-    <div>🟢 ROP</div>
-    <div>🔵 IC</div>
-    <div>🟣 CAMP</div>
-    <div>🟠 OP</div>
-    <div>🟡 TG</div>
+<b>Legend</b><br>
+🔴 PS<br>
+🟢 ROP<br>
+🔵 IC<br>
+🟣 CAMP<br>
+🟠 OP<br>
+🟡 TG
 </div>
 
 <div id="map"></div>
 
-<!-- JS Libraries -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
 <script>
-
 // ---------------- MAP SETUP ----------------
 var map = L.map('map').setView([23.5, 87.5], 7);
 
@@ -125,14 +87,12 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 var markers = L.markerClusterGroup();
 map.addLayer(markers);
 
-// 🔁 YOUR TSV LINK
+// 🔁 TSV LINK
 var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv";
 
-
-// ---------------- ICON STYLE ----------------
+// 🎯 ICON STYLE
 function getIcon(type){
     var color="blue";
-
     if(type=="PS") color="red";
     else if(type=="ROP") color="green";
     else if(type=="IC") color="blue";
@@ -149,26 +109,22 @@ function getIcon(type){
     });
 }
 
-
-// ---------------- LOAD TSV ----------------
+// 📡 LOAD TSV DATA
 fetch(sheetURL)
 .then(response => response.text())
 .then(data => {
 
     var rows = data.trim().split("\n");
-
     var typesSet = new Set();
 
     for(var i=1; i<rows.length; i++){
         var cols = rows[i].split("\t");
 
-        // ---- COLUMN MAPPING (OLD LOGIC) ----
-        var caption = cols[17] ? cols[17].trim() : "";   // Column R
-        var lat = parseFloat(cols[18]);                  // Column S
-        var lon = parseFloat(cols[19]);                  // Column T
-        var type = cols[1] ? cols[1].trim() : "Unit";    // ⭐ Column B for filter
+        var caption = cols[17] ? cols[17].trim() : "";
+        var lat = parseFloat(cols[18]);
+        var lon = parseFloat(cols[19]);
+        var type = cols[1] ? cols[1].trim() : "Unit";
 
-        // ---- SKIP INVALID COORDINATES ----
         if(!caption || isNaN(lat) || isNaN(lon)) continue;
 
         typesSet.add(type);
@@ -186,9 +142,7 @@ fetch(sheetURL)
         markers.addLayer(marker);
     }
 
-    // ---------------- FILTER DROPDOWN ----------------
     var filter = document.getElementById("typeFilter");
-
     typesSet.forEach(t=>{
         var opt = document.createElement("option");
         opt.value = t;
@@ -198,16 +152,14 @@ fetch(sheetURL)
 
 });
 
-
-// ---------------- FILTER FUNCTION ----------------
+// 🎛 FILTER FUNCTION
 document.getElementById("typeFilter").addEventListener("change", function(){
     var selected = this.value;
-
     markers.clearLayers();
 
     fetch(sheetURL)
-    .then(r => r.text())
-    .then(data => {
+    .then(r=>r.text())
+    .then(data=>{
         var rows = data.trim().split("\n");
 
         for(var i=1; i<rows.length; i++){
@@ -219,12 +171,10 @@ document.getElementById("typeFilter").addEventListener("change", function(){
             var type = cols[1] ? cols[1].trim() : "Unit";
 
             if(!caption || isNaN(lat) || isNaN(lon)) continue;
-            if(selected !== "all" && type !== selected) continue;
+            if(selected !== "ALL" && type !== selected) continue;
 
-            var marker = L.marker([lat,lon],{
-                icon:getIcon(type),
-                unitType:type
-            }).bindPopup(`
+            var marker = L.marker([lat,lon],{icon:getIcon(type)})
+            .bindPopup(`
                 <div class="popup-card">
                     <div class="popup-title">${caption}</div>
                     <div class="popup-type">${type}</div>
