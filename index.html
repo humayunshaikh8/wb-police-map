@@ -115,22 +115,20 @@ body { margin:0; font-family: 'Segoe UI', sans-serif; }
 
 <script>
 
-// 🌍 INIT MAP
+// MAP INIT
 var map = L.map('map').setView([23.5, 87.5], 7);
 
-// 🗺️ PREMIUM MAP STYLE
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution:'© OpenStreetMap'
 }).addTo(map);
 
-// 🔵 CLUSTER GROUP
 var markers = L.markerClusterGroup();
 map.addLayer(markers);
 
-// 📡 YOUR TSV DATA LINK
+// 🔁 YOUR TSV LINK
 var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv";
 
-// 🎯 ICON COLORS
+// 🎯 ICONS
 function getIcon(type){
     var color="blue";
     if(type=="PS") color="red";
@@ -149,29 +147,41 @@ function getIcon(type){
     });
 }
 
-// 🧠 LOAD TSV DATA
+// 🔍 FIND COLUMN INDEX SAFELY
+function findIndex(headers, names){
+    for(let n of names){
+        let idx = headers.findIndex(h => h.trim().toLowerCase() === n);
+        if(idx !== -1) return idx;
+    }
+    return -1;
+}
+
+// 📡 LOAD DATA
 fetch(sheetURL)
-.then(response => response.text())
+.then(r => r.text())
 .then(data => {
 
-    var rows = data.split("\n");
-    var headers = rows[0].split("\t");
+    var rows = data.trim().split("\n");
+    var headers = rows[0].split("\t").map(h => h.trim().toLowerCase());
 
-    var captionIndex = headers.indexOf("caption");
-    var latIndex = headers.indexOf("lat");
-    var lonIndex = headers.indexOf("lon");
-    var typeIndex = headers.indexOf("hq");
+    var captionIndex = findIndex(headers, ["caption","name"]);
+    var latIndex = findIndex(headers, ["lat","latitude"]);
+    var lonIndex = findIndex(headers, ["lon","lng","longitude"]);
+    var typeIndex = findIndex(headers, ["hq","type","category"]);
+
+    console.log("Detected columns:", captionIndex, latIndex, lonIndex, typeIndex);
 
     var typesSet = new Set();
 
     for(var i=1; i<rows.length; i++){
         var cols = rows[i].split("\t");
 
-        var caption = cols[captionIndex];
+        var caption = cols[captionIndex] ? cols[captionIndex].trim() : "";
         var lat = parseFloat(cols[latIndex]);
         var lon = parseFloat(cols[lonIndex]);
-        var type = cols[typeIndex];
+        var type = cols[typeIndex] ? cols[typeIndex].trim() : "Unit";
 
+        // 🚫 Skip bad rows
         if(!caption || isNaN(lat) || isNaN(lon)) continue;
 
         typesSet.add(type);
@@ -187,7 +197,7 @@ fetch(sheetURL)
         markers.addLayer(marker);
     }
 
-    // Populate filter dropdown
+    // FILTER DROPDOWN
     var filter = document.getElementById("typeFilter");
     typesSet.forEach(t=>{
         var opt = document.createElement("option");
@@ -195,48 +205,8 @@ fetch(sheetURL)
         opt.text = t;
         filter.appendChild(opt);
     });
+
 });
-
-// 🎛 FILTER FUNCTION
-document.getElementById("typeFilter").addEventListener("change",function(){
-    var selected = this.value;
-    markers.clearLayers();
-
-    fetch(sheetURL)
-    .then(r=>r.text())
-    .then(data=>{
-        var rows = data.split("\n");
-        var headers = rows[0].split("\t");
-
-        var captionIndex = headers.indexOf("caption");
-        var latIndex = headers.indexOf("lat");
-        var lonIndex = headers.indexOf("lon");
-        var typeIndex = headers.indexOf("hq");
-
-        for(var i=1; i<rows.length; i++){
-            var cols = rows[i].split("\t");
-
-            var caption = cols[captionIndex];
-            var lat = parseFloat(cols[latIndex]);
-            var lon = parseFloat(cols[lonIndex]);
-            var type = cols[typeIndex];
-
-            if(!caption || isNaN(lat) || isNaN(lon)) continue;
-            if(selected!="ALL" && type!=selected) continue;
-
-            var marker = L.marker([lat,lon],{icon:getIcon(type)})
-                .bindPopup(`
-                    <div class="popup-card">
-                        <div class="popup-title">${caption}</div>
-                        <div class="popup-type">${type}</div>
-                    </div>
-                `);
-
-            markers.addLayer(marker);
-        }
-    });
-});
-
 </script>
 </body>
 </html>
