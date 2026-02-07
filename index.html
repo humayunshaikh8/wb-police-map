@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>WB Police Live Unit Map</title>
+    <title>WB Police Force Details</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
@@ -80,7 +80,7 @@
 
 <body>
 
-    <div class="header">🚓 WB Police Live Unit Map</div>
+    <div class="header"> WB Police Force Details</div>
 
     <div class="filterBox">
         <b>Filter by Unit Type</b><br>
@@ -91,16 +91,7 @@
         <input type="text" id="searchBox" placeholder="Search unit name..." style="width:160px;padding:4px;">
     </div>
 
-    <div class="legend">
-        <b>Legend</b><br>
-        🔴 PS<br>
-        🟢 ROP<br>
-        🔵 IC<br>
-        🟣 CAMP<br>
-        🟠 OP<br>
-        🟡 TG
-    </div>
-
+   
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -239,10 +230,10 @@
         var legend = L.control({ position: 'bottomright' });
         legend.onAdd = function () {
             var div = L.DomUtil.create('div', 'legend');
-            div.innerHTML += "<b>HQ Color Legend</b><br>";
+            div.innerHTML += "<b>Legend</b><br>";
 
             const legendItems = {
-                "DG": "#FF0000",
+                "DG Reserve": "#FF0000",
                 "HQ": "#0000FF",
                 "DMG": "#00FF00",
                 "PS": "#FFFF00",
