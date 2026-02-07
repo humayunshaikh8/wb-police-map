@@ -91,7 +91,7 @@
         <input type="text" id="searchBox" placeholder="Search unit name..." style="width:160px;padding:4px;">
     </div>
 
-   
+
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -156,57 +156,58 @@
 
         // 🚀 LOAD DATA
         function loadData(selectedType = "ALL", searchText = "") {
-            markers.clearLayers();
-            allMarkersData = [];
+                markers.clearLayers();
+                allMarkersData = [];
 
-            fetch(sheetURL)
-                .then(r => r.text())
-                .then(data => {
-                    var rows = data.trim().split("\n");
-                    var typesSet = new Set();
+                fetch(sheetURL)
+                    .then(r => r.text())
+                    .then(data => {
+                        var rows = data.trim().split("\n");
+                        var typesSet = new Set();
 
-                    for (var i = 1; i < rows.length; i++) {
-                        var cols = rows[i].split("\t");
+                        for (var i = 1; i < rows.length; i++) {
+                            var cols = rows[i].split("\t");
 
-                        var caption = cols[17]?.trim();
-                        var lat = parseFloat(cols[18]);
-                        var lon = parseFloat(cols[19]);
-                        var type = cols[1]?.trim() || "Unit";
-                        var hq = cols[20]?.trim() || "";
+                            // 🟢 COLUMN MAPPING (UPDATED)
+                            var type = cols[1]?.trim() || "Unit";      // Column B (UNCHANGED)
+                            var caption = cols[28]?.trim();            // Column AC (Name)
+                            var lat = parseFloat(cols[29]);            // Column AD
+                            var lon = parseFloat(cols[30]);            // Column AE
+                            var hq = cols[31]?.trim() || "";           // Column AF
 
-                        if (!caption || isNaN(lat) || isNaN(lon)) continue;
-                        if (selectedType !== "ALL" && type !== selectedType) continue;
-                        if (searchText && !caption.toLowerCase().includes(searchText.toLowerCase())) continue;
+                            if (!caption || isNaN(lat) || isNaN(lon)) continue;
+                            if (selectedType !== "ALL" && type !== selectedType) continue;
+                            if (searchText && !caption.toLowerCase().includes(searchText.toLowerCase())) continue;
 
-                        typesSet.add(type);
+                            typesSet.add(type);
 
-                        var color = getHQColor(hq);
+                            var color = getHQColor(hq);
 
-                        var marker = L.marker([lat, lon], {
-                            icon: createPremiumIcon(color)
-                        }).bindPopup(`
+                            var marker = L.marker([lat, lon], {
+                                icon: createPremiumIcon(color)
+                            }).bindPopup(`
                     <div class="popup-card">
                         <div class="popup-title">${caption}</div>
                         <div class="popup-type">${type}</div>
                     </div>
                 `);
 
-                        markers.addLayer(marker);
-                        allMarkersData.push(marker);
-                    }
+                            markers.addLayer(marker);
+                            allMarkersData.push(marker);
+                        }
 
-                    // Populate Filter
-                    var filter = document.getElementById("typeFilter");
-                    if (filter.options.length <= 1) {
-                        typesSet.forEach(t => {
-                            var opt = document.createElement("option");
-                            opt.value = t;
-                            opt.text = t;
-                            filter.appendChild(opt);
-                        });
-                    }
-                });
-        }
+                        // Populate Filter Once
+                        var filter = document.getElementById("typeFilter");
+                        if (filter.options.length <= 1) {
+                            typesSet.forEach(t => {
+                                var opt = document.createElement("option");
+                                opt.value = t;
+                                opt.text = t;
+                                filter.appendChild(opt);
+                            });
+                        }
+                    });
+            }
 
         // 🔄 Initial Load
         loadData();
@@ -224,7 +225,7 @@
         // 🔁 AUTO REFRESH EVERY 30 SECONDS
         setInterval(function () {
             loadData(document.getElementById("typeFilter").value, document.getElementById("searchBox").value);
-        }, 30000);
+        }, 60000);
 
         // 🏷 HQ COLOR LEGEND
         var legend = L.control({ position: 'bottomright' });
