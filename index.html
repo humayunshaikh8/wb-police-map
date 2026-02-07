@@ -75,12 +75,27 @@
             color: white;
             background: linear-gradient(135deg, #3949ab, #1e88e5);
         }
+        #pac-input {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 25px;
+    border: none;
+    outline: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 1100;
+}
     </style>
 </head>
 
 <body>
 
     <div class="header"> WB Police Force Details</div>
+    <input id="pac-input" class="controls" type="text" placeholder="Search location..." />
 
     <div class="filterBox">
         <b>Filter by Unit Type</b><br>
@@ -89,6 +104,7 @@
         </select>
         <br><br>
         <input type="text" id="searchBox" placeholder="Search unit name..." style="width:160px;padding:4px;">
+
     </div>
 
 
@@ -96,9 +112,51 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBiP3uf8ZRTvrGB6zsce2iVWj1H_IFnMsg&libraries=places"></script>
 
     <script>
         var map = L.map('map', { zoomControl: true }).setView([23.5, 87.5], 7);
+        // 🌍 Google Places Search Integration
+            var input = document.getElementById('pac-input');
+            var searchBox = new google.maps.places.SearchBox(input);
+
+            // Bias search to current map view
+            map.on('moveend', function () {
+                var bounds = map.getBounds();
+                var sw = bounds.getSouthWest();
+                var ne = bounds.getNorthEast();
+
+                var gBounds = new google.maps.LatLngBounds(
+                    new google.maps.LatLng(sw.lat, sw.lng),
+                    new google.maps.LatLng(ne.lat, ne.lng)
+                );
+
+                searchBox.setBounds(gBounds);
+            });
+
+            var searchMarker; // single marker for search
+
+            searchBox.addListener('places_changed', function () {
+                var places = searchBox.getPlaces();
+                if (!places || places.length === 0) return;
+
+                var place = places[0];
+                if (!place.geometry) return;
+
+                var location = place.geometry.location;
+                var lat = location.lat();
+                var lng = location.lng();
+
+                // Remove old search marker
+                if (searchMarker) map.removeLayer(searchMarker);
+
+                // Add new marker
+                searchMarker = L.marker([lat, lng]).addTo(map)
+                    .bindPopup("📍 " + place.name)
+                    .openPopup();
+
+                map.setView([lat, lng], 14);
+            });
 
         // 🌍 Premium Map Layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
