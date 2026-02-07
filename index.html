@@ -1,190 +1,271 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>WB Police Live Unit Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WB Police Live Unit Map</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
 
-<style>
-body { margin:0; font-family:'Segoe UI',sans-serif; }
-#map { height:100vh; }
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
 
-.header {
-    position:absolute;
-    top:10px; left:50%; transform:translateX(-50%);
-    background:linear-gradient(90deg,#0d47a1,#1976d2);
-    color:white; padding:10px 24px;
-    border-radius:30px; font-weight:600;
-    box-shadow:0 4px 12px rgba(0,0,0,0.3);
-    z-index:1000;
-}
+        #map {
+            height: 100vh;
+        }
 
-.legend, .filterBox {
-    position:absolute; background:white;
-    padding:12px; border-radius:10px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.2);
-    z-index:1000;
-}
+        .header {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, #0d47a1, #1976d2);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
 
-.legend { bottom:20px; left:20px; font-size:13px; }
-.filterBox { top:80px; left:20px; }
+        .legend,
+        .filterBox {
+            position: absolute;
+            background: white;
+            padding: 12px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
 
-.popup-card { min-width:180px; }
-.popup-title {
-    font-weight:700; font-size:16px;
-    color:#0d47a1; margin-bottom:6px;
-}
-.popup-type {
-    display:inline-block;
-    padding:4px 10px;
-    border-radius:14px;
-    font-size:12px;
-    font-weight:600;
-    color:white;
-    background:linear-gradient(135deg,#3949ab,#1e88e5);
-}
-</style>
+        .legend {
+            bottom: 20px;
+            left: 20px;
+            font-size: 13px;
+        }
+
+        .filterBox {
+            top: 80px;
+            left: 20px;
+        }
+
+        .popup-card {
+            min-width: 180px;
+        }
+
+        .popup-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: #0d47a1;
+            margin-bottom: 6px;
+        }
+
+        .popup-type {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #3949ab, #1e88e5);
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="header">🚓 WB Police Live Unit Map</div>
+    <div class="header">🚓 WB Police Live Unit Map</div>
 
-<div class="filterBox">
-<b>Filter by Unit Type</b><br>
-<select id="typeFilter">
-<option value="ALL">All Units</option>
-</select>
-</div>
+    <div class="filterBox">
+        <b>Filter by Unit Type</b><br>
+        <select id="typeFilter">
+            <option value="ALL">All Units</option>
+        </select>
+        <br><br>
+        <input type="text" id="searchBox" placeholder="Search unit name..." style="width:160px;padding:4px;">
+    </div>
 
-<div class="legend">
-<b>Legend</b><br>
-🔴 PS<br>
-🟢 ROP<br>
-🔵 IC<br>
-🟣 CAMP<br>
-🟠 OP<br>
-🟡 TG
-</div>
+    <div class="legend">
+        <b>Legend</b><br>
+        🔴 PS<br>
+        🟢 ROP<br>
+        🔵 IC<br>
+        🟣 CAMP<br>
+        🟠 OP<br>
+        🟡 TG
+    </div>
 
-<div id="map"></div>
+    <div id="map"></div>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
-<script>
-// ---------------- MAP SETUP ----------------
-var map = L.map('map').setView([23.5, 87.5], 7);
+    <script>
+        var map = L.map('map', { zoomControl: true }).setView([23.5, 87.5], 7);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:'© OpenStreetMap'
-}).addTo(map);
+        // 🌍 Premium Map Layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 19
+        }).addTo(map);
 
-var markers = L.markerClusterGroup();
-map.addLayer(markers);
+        // 🔥 Cluster Group
+        var markers = L.markerClusterGroup({
+            disableClusteringAtZoom: 13,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false
+        });
+        map.addLayer(markers);
 
-// 🔁 TSV LINK
-var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv";
+        // 📡 TSV DATA SOURCE
+        var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv";
 
-// 🎯 ICON STYLE
-function getIcon(type){
-    var color="blue";
-    if(type=="PS") color="red";
-    else if(type=="ROP") color="green";
-    else if(type=="IC") color="blue";
-    else if(type=="CAMP") color="purple";
-    else if(type=="OP") color="orange";
-    else if(type=="TG") color="yellow";
-
-    return new L.Icon({
-        iconUrl:`https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
-        shadowUrl:'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-        iconSize:[25,41],
-        iconAnchor:[12,41],
-        popupAnchor:[1,-34]
-    });
-}
-
-// 📡 LOAD TSV DATA
-fetch(sheetURL)
-.then(response => response.text())
-.then(data => {
-
-    var rows = data.trim().split("\n");
-    var typesSet = new Set();
-
-    for(var i=1; i<rows.length; i++){
-        var cols = rows[i].split("\t");
-
-        var caption = cols[17] ? cols[17].trim() : "";
-        var lat = parseFloat(cols[18]);
-        var lon = parseFloat(cols[19]);
-        var type = cols[1] ? cols[1].trim() : "Unit";
-
-        if(!caption || isNaN(lat) || isNaN(lon)) continue;
-
-        typesSet.add(type);
-
-        var marker = L.marker([lat,lon],{
-            icon:getIcon(type),
-            unitType:type
-        }).bindPopup(`
-            <div class="popup-card">
-                <div class="popup-title">${caption}</div>
-                <div class="popup-type">${type}</div>
-            </div>
-        `);
-
-        markers.addLayer(marker);
-    }
-
-    var filter = document.getElementById("typeFilter");
-    typesSet.forEach(t=>{
-        var opt = document.createElement("option");
-        opt.value = t;
-        opt.text = t;
-        filter.appendChild(opt);
-    });
-
-});
-
-// 🎛 FILTER FUNCTION
-document.getElementById("typeFilter").addEventListener("change", function(){
-    var selected = this.value;
-    markers.clearLayers();
-
-    fetch(sheetURL)
-    .then(r=>r.text())
-    .then(data=>{
-        var rows = data.trim().split("\n");
-
-        for(var i=1; i<rows.length; i++){
-            var cols = rows[i].split("\t");
-
-            var caption = cols[17] ? cols[17].trim() : "";
-            var lat = parseFloat(cols[18]);
-            var lon = parseFloat(cols[19]);
-            var type = cols[1] ? cols[1].trim() : "Unit";
-
-            if(!caption || isNaN(lat) || isNaN(lon)) continue;
-            if(selected !== "ALL" && type !== selected) continue;
-
-            var marker = L.marker([lat,lon],{icon:getIcon(type)})
-            .bindPopup(`
-                <div class="popup-card">
-                    <div class="popup-title">${caption}</div>
-                    <div class="popup-type">${type}</div>
-                </div>
-            `);
-
-            markers.addLayer(marker);
+        // 🎨 HQ COLOR MAP
+        function getHQColor(hq) {
+            const colors = {
+                "DG": "#FF0000",
+                "HQ": "#0000FF",
+                "DMG": "#00FF00",
+                "PS": "#FFFF00",
+                "TG": "#FF00FF",
+                "STG": "#7FFFD4",
+                "OP": "#A52A2A",
+                "TOP": "#808000",
+                "IC": "#008000",
+                "ROP": "#FFA500",
+                "BOP": "#ADD8E6",
+                "CAMP": "#00FFFF"
+            };
+            return colors[hq] || "#555555";
         }
-    });
-});
-</script>
+
+        // ⭐ Premium Glowing Icon
+        function createPremiumIcon(color) {
+            return L.divIcon({
+                className: '',
+                html: `<div style="
+                width:18px;height:18px;
+                background:${color};
+                border-radius:50%;
+                border:3px solid white;
+                box-shadow:0 0 6px ${color},0 0 10px ${color},0 0 16px ${color};
+            "></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+        }
+
+        var allMarkersData = [];
+
+        // 🚀 LOAD DATA
+        function loadData(selectedType = "ALL", searchText = "") {
+            markers.clearLayers();
+            allMarkersData = [];
+
+            fetch(sheetURL)
+                .then(r => r.text())
+                .then(data => {
+                    var rows = data.trim().split("\n");
+                    var typesSet = new Set();
+
+                    for (var i = 1; i < rows.length; i++) {
+                        var cols = rows[i].split("\t");
+
+                        var caption = cols[17]?.trim();
+                        var lat = parseFloat(cols[18]);
+                        var lon = parseFloat(cols[19]);
+                        var type = cols[1]?.trim() || "Unit";
+                        var hq = cols[20]?.trim() || "";
+
+                        if (!caption || isNaN(lat) || isNaN(lon)) continue;
+                        if (selectedType !== "ALL" && type !== selectedType) continue;
+                        if (searchText && !caption.toLowerCase().includes(searchText.toLowerCase())) continue;
+
+                        typesSet.add(type);
+
+                        var color = getHQColor(hq);
+
+                        var marker = L.marker([lat, lon], {
+                            icon: createPremiumIcon(color)
+                        }).bindPopup(`
+                    <div class="popup-card">
+                        <div class="popup-title">${caption}</div>
+                        <div class="popup-type">${type}</div>
+                    </div>
+                `);
+
+                        markers.addLayer(marker);
+                        allMarkersData.push(marker);
+                    }
+
+                    // Populate Filter
+                    var filter = document.getElementById("typeFilter");
+                    if (filter.options.length <= 1) {
+                        typesSet.forEach(t => {
+                            var opt = document.createElement("option");
+                            opt.value = t;
+                            opt.text = t;
+                            filter.appendChild(opt);
+                        });
+                    }
+                });
+        }
+
+        // 🔄 Initial Load
+        loadData();
+
+        // 🎛 Type Filter
+        document.getElementById("typeFilter").addEventListener("change", function () {
+            loadData(this.value, document.getElementById("searchBox").value);
+        });
+
+        // 🔎 Search Box
+        document.getElementById("searchBox").addEventListener("input", function () {
+            loadData(document.getElementById("typeFilter").value, this.value);
+        });
+
+        // 🔁 AUTO REFRESH EVERY 30 SECONDS
+        setInterval(function () {
+            loadData(document.getElementById("typeFilter").value, document.getElementById("searchBox").value);
+        }, 30000);
+
+        // 🏷 HQ COLOR LEGEND
+        var legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function () {
+            var div = L.DomUtil.create('div', 'legend');
+            div.innerHTML += "<b>HQ Color Legend</b><br>";
+
+            const legendItems = {
+                "DG": "#FF0000",
+                "HQ": "#0000FF",
+                "DMG": "#00FF00",
+                "PS": "#FFFF00",
+                "TG": "#FF00FF",
+                "STG": "#7FFFD4",
+                "OP": "#A52A2A",
+                "TOP": "#808000",
+                "IC": "#008000",
+                "ROP": "#FFA500",
+                "BOP": "#ADD8E6",
+                "CAMP": "#00FFFF"
+            };
+
+            for (let key in legendItems) {
+                div.innerHTML += `<div style="margin:4px 0;">
+                <span style="display:inline-block;width:14px;height:14px;border-radius:50%;
+                background:${legendItems[key]};margin-right:6px;"></span>${key}
+            </div>`;
+            }
+            return div;
+        };
+        legend.addTo(map);
+    </script>
 </body>
+
 </html>
