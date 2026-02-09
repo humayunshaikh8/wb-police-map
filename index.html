@@ -281,165 +281,170 @@
         // 🚀 LOAD DATA (FULL SCAN + SAFE SKIP)
         function loadData(selectedType = "ALL", searchText = "") {
 
-            var bounds = [];
-            allMarkersData = [];
+                var bounds = [];
+                allMarkersData = [];
 
-            fetch(sheetURL)
-                .then(r => r.text())
-                .then(data => {
+                fetch(sheetURL)
+                    .then(function (response) {
+                        return response.text();
+                    })
+                    .then(function (data) {
 
-                    var rows = data.split("\n"); // don't trim, keep full row count
-                    var typesSet = new Set();
+                        var rows = data.split("\n"); // keep all rows
+                        var typesSet = new Set();
 
+                        var maxRows = Math.min(rows.length, 4000); // scan up to 4000 rows
 
-                    var maxRows = Math.min(rows.length, 4000); // scan up to 4000 rows
+                        for (var i = 1; i < maxRows; i++) {
 
-                    for (var i = 1; i < maxRows; i++) {
+                            if (!rows[i] || rows[i].trim() === "") continue; // skip blank lines
 
-                        if (!rows[i] || rows[i].trim() === "") continue; // skip blank line
+                            var cols = rows[i].split("\t");
+                            if (cols.length < 32) continue; // skip incomplete rows
 
-                        var cols = rows[i].split("\t");
-                        if (cols.length < 32) continue; // skip incomplete rows
+                            var type = cols[1] ? cols[1].trim() : "";
+                            var caption = cols[28] ? cols[28].trim() : "";
+                            var lat = parseFloat(cols[29]);
+                            var lon = parseFloat(cols[30]);
+                            var hq = cols[31] ? cols[31].trim() : "";
 
-                        var type = cols[1]?.trim();      // Column B (MUST exist)
-                        var caption = cols[28]?.trim();  // Column AC
-                        var lat = parseFloat(cols[29]);  // Column AD
-                        var lon = parseFloat(cols[30]);  // Column AE
-                        var hq = cols[31]?.trim() || ""; // Column AF
+                            // Skip rows missing required data
+                            if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
 
-                        // 🚫 Skip rows missing required data
-                        if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
+                            // Apply filters
+                            if (selectedType !== "ALL" && type !== selectedType) continue;
+                            if (searchText && !caption.toLowerCase().includes(searchText.toLowerCase())) continue;
 
-                        // 🎯 Filters
-                        if (selectedType !== "ALL" && type !== selectedType) continue;
-                        if (searchText && !caption.toLowerCase().includes(searchText.toLowerCase())) continue;
+                            typesSet.add(type);
 
-                        typesSet.add(type);
+                            var color = getHQColor(hq);
 
-                        var color = getHQColor(hq);
+                            // Clean full text
+                            var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 
-                        // 🔍 CLEAN FULL TEXT
-                        var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+                            // Extract heading (unit name)
+                            var firstLine = caption.split("\n")[0] || "";
+                            var unitName = firstLine
+                                .replace(/Actual Strength.*/i, "")
+                                .replace(/AVAILABLE STRENGTH.*/i, "")
+                                .replace(/Contact No.*/i, "")
+                                .trim();
 
-                        // 🏷 Heading
-                        var firstLine = caption.split("\n")[0] || "";
-                        var unitName = firstLine
-                            .replace(/Actual Strength.*/i, "")
-                            .replace(/AVAILABLE STRENGTH.*/i, "")
-                            .replace(/Contact No.*/i, "")
-                            .trim();
+                            // Extract Actual Strength
+                            var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
+                            var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
 
-                        // 🟢 Actual Strength
-                        var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
-                        var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
+                            // Extract Available Strength
+                            var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
+                            var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
 
-                        // 🟠 Available Strength
-                        var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
-                        var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
+                            // Extract Contact
+                            var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
+                            var contact = contactMatch ? contactMatch[1].trim() : "";
 
-                        // 📞 Contact
-                        var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
-                        var contact = contactMatch ? contactMatch[1].trim() : "";
+                            // Create marker
+                            var marker = L.circleMarker([lat, lon], {
+                                radius: 8,
+                                fillColor: color,
+                                color: "#ffffff",
+                                weight: 2,
+                                opacity: 1,
+                                fillOpacity: 1
+                            });
 
-                        // Create marker
-                        var marker = L.circleMarker([lat, lon], {
-                            radius: 8,
-                            fillColor: color,
-                            color: "#ffffff",
-                            weight: 2,
-                            opacity: 1,
-                            fillOpacity: 1
-                        });
+                            marker.addTo(map);
 
-                        // Add marker to map
-                        marker.addTo(map);
+                            // Popup design
+                            var popupContent = `
+                <div style="
+                    min-width:260px;
+                    font-family:'Segoe UI';
+                    border-radius:12px;
+                    overflow:hidden;
+                    box-shadow:0 6px 18px rgba(0,0,0,0.25);
+                    background:white;
+                ">
+                    <div style="
+                        background:linear-gradient(135deg,#0d47a1,#1976d2);
+                        color:white;
+                        padding:10px 12px;
+                        font-weight:700;
+                        font-size:14px;
+                    ">
+                        ${unitName}
+                    </div>
 
-                        // Build popup content
-                        var popupContent = `
-    <div style="
-        min-width:260px;
-        font-family:'Segoe UI';
-        border-radius:12px;
-        overflow:hidden;
-        box-shadow:0 6px 18px rgba(0,0,0,0.25);
-        background:white;
-    ">
+                    ${actualStrength ? `
+                    <div style="
+                        padding:10px 12px;
+                        background:#e8f5e9;
+                        color:#1b5e20;
+                        font-size:13px;
+                    ">
+                        ${actualStrength}
+                    </div>` : ""}
 
-        <div style="
-            background:linear-gradient(135deg,#0d47a1,#1976d2);
-            color:white;
-            padding:10px 12px;
-            font-weight:700;
-            font-size:14px;
-        ">
-            ${unitName}
-        </div>
+                    ${availableStrength ? `
+                    <div style="
+                        padding:10px 12px;
+                        background:#fff3e0;
+                        color:#e65100;
+                        font-size:13px;
+                    ">
+                        ${availableStrength}
+                    </div>` : ""}
 
-        ${actualStrength ? `
-        <div style="
-            padding:10px 12px;
-            background:#e8f5e9;
-            color:#1b5e20;
-            font-size:13px;
-        ">
-            ${actualStrength}
-        </div>` : ""}
+                    ${contact ? `
+                    <div style="
+                        padding:10px 12px;
+                        background:#f3e5f5;
+                        color:#4a148c;
+                        font-size:13px;
+                    ">
+                        📞 ${contact}
+                    </div>` : ""}
 
-        ${availableStrength ? `
-        <div style="
-            padding:10px 12px;
-            background:#fff3e0;
-            color:#e65100;
-            font-size:13px;
-        ">
-            ${availableStrength}
-        </div>` : ""}
+                    <div style="padding:10px 12px;text-align:right;">
+                        <span style="
+                            background:linear-gradient(135deg,#3949ab,#1e88e5);
+                            color:white;
+                            padding:4px 10px;
+                            border-radius:12px;
+                            font-size:11px;
+                            font-weight:600;
+                        ">
+                            ${type}
+                        </span>
+                    </div>
+                </div>
+                `;
 
-        ${contact ? `
-        <div style="
-            padding:10px 12px;
-            background:#f3e5f5;
-            color:#4a148c;
-            font-size:13px;
-        ">
-            📞 ${contact}
-        </div>` : ""}
+                            marker.bindPopup(popupContent);
 
-        <div style="padding:10px 12px;text-align:right;">
-            <span style="
-                background:linear-gradient(135deg,#3949ab,#1e88e5);
-                color:white;
-                padding:4px 10px;
-                border-radius:12px;
-                font-size:11px;
-                font-weight:600;
-            ">
-                ${type}
-            </span>
-        </div>
+                            allMarkersData.push(marker);
+                            bounds.push([lat, lon]);
+                        }
 
-    </div>
-`;
+                        // Fit bounds after loop
+                        if (bounds.length > 0) {
+                            map.fitBounds(bounds, { padding: [30, 30] });
+                        }
 
-                        // Bind popup
-                        marker.bindPopup(popupContent);
+                        // Populate filter only once
+                        var filter = document.getElementById("typeFilter");
+                        if (filter.options.length <= 1) {
+                            typesSet.forEach(function (t) {
+                                var opt = document.createElement("option");
+                                opt.value = t;
+                                opt.text = t;
+                                filter.appendChild(opt);
+                            });
+                        }
 
-                        // Store marker
-                        allMarkersData.push(marker);
-
-                        // Save bounds (DO NOT fit here — only collect)
-                        bounds.push([lat, lon]);
-            if (bounds.length > 0) {
-                map.fitBounds(bounds, { padding: [30, 30] });
-            }
-            var filter = document.getElementById("typeFilter");
-            if (filter.options.length <= 1) {
-                typesSet.forEach(t => {
-                    var opt = document.createElement("option");
-                    opt.value = t;
-                    opt.text = t;
-                    filter.appendChild(opt);
-                });
+                    })
+                    .catch(function (error) {
+                        console.error("Data load error:", error);
+                    });
             }
 
 
