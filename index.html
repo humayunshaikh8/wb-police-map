@@ -147,7 +147,7 @@
     <div id="map"></div>
 
     <script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBiP3uf8ZRTvrGB6zsce2iVWj1H_IFnMsg"></script>
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBiP3uf8ZRTvrGB6zsce2iVWj1H_IFnMsg&libraries=places"></script>
 
 
     <script>
@@ -200,18 +200,9 @@
             var searchBox = new google.maps.places.SearchBox(input);
 
             // Bias search to current map view
-            map.on('moveend', function () {
-                var bounds = map.getBounds();
-                var sw = bounds.getSouthWest();
-                var ne = bounds.getNorthEast();
-
-                var gBounds = new google.maps.LatLngBounds(
-                    new google.maps.LatLng(sw.lat, sw.lng),
-                    new google.maps.LatLng(ne.lat, ne.lng)
-                );
-
-                searchBox.setBounds(gBounds);
-            });
+            google.maps.event.addListener(map, "bounds_changed", function () {
+                    searchBox.setBounds(map.getBounds());
+                });
 
             var searchMarker; // single marker for search
 
@@ -241,6 +232,7 @@
 
                 map.setCenter({ lat: lat, lng: lng });
                 map.setZoom(14);
+            });
         // 🌍 Premium Map Layer
 
 
@@ -278,7 +270,7 @@
             // 🚀 LOAD DATA (FULL SCAN + SAFE SKIP)
             function loadData(selectedType = "ALL", searchText = "") {
 
-                markers.clearLayers();
+
                 allMarkersData = [];
 
                 fetch(sheetURL)
