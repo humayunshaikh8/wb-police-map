@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>WB Police Force Details</title>
 
-
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
     <style>
         body {
@@ -73,55 +74,56 @@
             color: white;
             background: linear-gradient(135deg, #3949ab, #1e88e5);
         }
+
         /* ===== Premium Google Search (Top Right) ===== */
-.top-right-search {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    z-index: 1200;
+        .top-right-search {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1200;
 
-    display: flex;
-    align-items: center;
-    padding: 8px 14px 8px 40px;
-    width: 300px;
+            display: flex;
+            align-items: center;
+            padding: 8px 14px 8px 40px;
+            width: 300px;
 
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(12px);
-    border-radius: 40px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-    transition: all 0.3s ease;
-}
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 40px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+            transition: all 0.3s ease;
+        }
 
-.top-right-search:hover {
-    box-shadow: 0 8px 22px rgba(13,71,161,0.35);
-}
+        .top-right-search:hover {
+            box-shadow: 0 8px 22px rgba(13, 71, 161, 0.35);
+        }
 
-.search-google-logo {
-    position: absolute;
-    left: 14px;
-    width: 20px;
-    opacity: 0.9;
-    pointer-events: none;
-}
+        .search-google-logo {
+            position: absolute;
+            left: 14px;
+            width: 20px;
+            opacity: 0.9;
+            pointer-events: none;
+        }
 
-#pac-input {
-    width: 100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 14px;
-    font-weight: 500;
-    color: #333;
-}
+        #pac-input {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
 
-.google-legend {
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(6px);
-    padding: 14px;
-    border-radius: 12px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-    font-family: 'Segoe UI', sans-serif;
-}
+        .google-legend {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(6px);
+            padding: 14px;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+            font-family: 'Segoe UI', sans-serif;
+        }
     </style>
 </head>
 
@@ -145,42 +147,44 @@
 
 
     <div id="map"></div>
-
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBiP3uf8ZRTvrGB6zsce2iVWj1H_IFnMsg&libraries=places"></script>
 
 
     <script>
-        var map = new google.maps.Map(document.getElementById("map"), {
-                center: { lat: 23.5, lng: 87.5 },
-                zoom: 7
-            });
+        var map = L.map('map').setView([23.5, 87.5], 7);
 
-            // 🏷 Google Maps Legend
-                var legendDiv = document.createElement("div");
-                legendDiv.className = "google-legend";
+        L.tileLayer("https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+            maxZoom: 20,
+            subdomains: ["mt0", "mt1", "mt2", "mt3"]
+        }).addTo(map);
 
-                legendDiv.innerHTML = "<b>Legend</b><br>";
+        // 🏷 Google Maps Legend
+        var legendDiv = document.createElement("div");
+        legendDiv.className = "google-legend";
 
-                const legendItems = {
-                    "DG Reserve": "#FF0000",
-                    "HQ": "#0000FF",
-                    "DMG": "#00FF00",
-                    "PS": "#FFFF00",
-                    "TG": "#FF00FF",
-                    "STG": "#7FFFD4",
-                    "OP": "#A52A2A",
-                    "TOP": "#808000",
-                    "IC": "#008000",
-                    "ROP": "#FFA500",
-                    "BOP": "#ADD8E6",
-                    "CAMP": "#00FFFF"
-                };
+        legendDiv.innerHTML = "<b>Legend</b><br>";
 
-                for (let key in legendItems) {
-                    var item = document.createElement("div");
-                    item.style.margin = "4px 0";
-                    item.innerHTML = `
+        const legendItems = {
+            "DG Reserve": "#FF0000",
+            "HQ": "#0000FF",
+            "DMG": "#00FF00",
+            "PS": "#FFFF00",
+            "TG": "#FF00FF",
+            "STG": "#7FFFD4",
+            "OP": "#A52A2A",
+            "TOP": "#808000",
+            "IC": "#008000",
+            "ROP": "#FFA500",
+            "BOP": "#ADD8E6",
+            "CAMP": "#00FFFF"
+        };
+
+        for (let key in legendItems) {
+            var item = document.createElement("div");
+            item.style.margin = "4px 0";
+            item.innerHTML = `
         <span style="
             display:inline-block;
             width:14px;
@@ -190,49 +194,56 @@
             margin-right:6px;">
         </span>${key}
     `;
-                    legendDiv.appendChild(item);
-                }
+            legendDiv.appendChild(item);
+        }
 
-                // 📍 Add legend to map (BOTTOM RIGHT)
-                map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(legendDiv);
+        // 📍 Add legend to map (BOTTOM RIGHT)
+        var legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function () { return legendDiv; };
+        legend.addTo(map);
+
         // 🌍 Google Places Search Integration
-            var input = document.getElementById('pac-input');
-            var searchBox = new google.maps.places.SearchBox(input);
+        var input = document.getElementById('pac-input');
+        var searchBox = new google.maps.places.SearchBox(input);
 
-            // Bias search to current map view
-            google.maps.event.addListener(map, "bounds_changed", function () {
-                    searchBox.setBounds(map.getBounds());
-                });
+        // Bias search to current map view
+        map.on("moveend", function () {
+            var bounds = map.getBounds();
+            var sw = bounds.getSouthWest();
+            var ne = bounds.getNorthEast();
 
-            var searchMarker; // single marker for search
+            var gBounds = new google.maps.LatLngBounds(
+                new google.maps.LatLng(sw.lat, sw.lng),
+                new google.maps.LatLng(ne.lat, ne.lng)
+            );
 
-            searchBox.addListener('places_changed', function () {
-                var places = searchBox.getPlaces();
-                if (!places || places.length === 0) return;
+            searchBox.setBounds(gBounds);
+        });
 
-                var place = places[0];
-                if (!place.geometry) return;
 
-                var location = place.geometry.location;
-                var lat = location.lat();
-                var lng = location.lng();
+        var searchMarker; // single marker for search
 
-                if (searchMarker) searchMarker.setMap(null);
+        searchBox.addListener('places_changed', function () {
+            var places = searchBox.getPlaces();
+            if (!places || places.length === 0) return;
 
-                searchMarker = new google.maps.Marker({
-                    position: { lat: lat, lng: lng },
-                    map: map,
-                    title: place.name
-                });
+            var place = places[0];
+            if (!place.geometry) return;
 
-                var infoWindow = new google.maps.InfoWindow({
-                    content: "📍 " + place.name
-                });
-                infoWindow.open(map, searchMarker);
+            var location = place.geometry.location;
+            var lat = location.lat();
+            var lng = location.lng();
 
-                map.setCenter({ lat: lat, lng: lng });
-                map.setZoom(14);
-            });
+            if (searchMarker) {
+                map.removeLayer(searchMarker);
+            }
+
+            searchMarker = L.marker([lat, lng]).addTo(map)
+                .bindPopup("📍 " + place.name)
+                .openPopup();
+
+            map.setView([lat, lng], 14);
+        });
         // 🌍 Premium Map Layer
 
 
@@ -267,136 +278,170 @@
 
         var allMarkersData = [];
 
-            // 🚀 LOAD DATA (FULL SCAN + SAFE SKIP)
-            function loadData(selectedType = "ALL", searchText = "") {
+        // 🚀 LOAD DATA (FULL SCAN + SAFE SKIP)
+        function loadData(selectedType = "ALL", searchText = "") {
+
+            var bounds = [];
+            allMarkersData = [];
+
+            fetch(sheetURL)
+                .then(r => r.text())
+                .then(data => {
+
+                    var rows = data.split("\n"); // don't trim, keep full row count
+                    var typesSet = new Set();
 
 
-                allMarkersData = [];
+                    var maxRows = Math.min(rows.length, 4000); // scan up to 4000 rows
 
-                fetch(sheetURL)
-                    .then(r => r.text())
-                    .then(data => {
+                    for (var i = 1; i < maxRows; i++) {
 
-                        var rows = data.split("\n"); // don't trim, keep full row count
-                        var typesSet = new Set();
-                        var bounds = new google.maps.LatLngBounds();
+                        if (!rows[i] || rows[i].trim() === "") continue; // skip blank line
 
-                        var maxRows = Math.min(rows.length, 4000); // scan up to 4000 rows
+                        var cols = rows[i].split("\t");
+                        if (cols.length < 32) continue; // skip incomplete rows
 
-                        for (var i = 1; i < maxRows; i++) {
+                        var type = cols[1]?.trim();      // Column B (MUST exist)
+                        var caption = cols[28]?.trim();  // Column AC
+                        var lat = parseFloat(cols[29]);  // Column AD
+                        var lon = parseFloat(cols[30]);  // Column AE
+                        var hq = cols[31]?.trim() || ""; // Column AF
 
-                            if (!rows[i] || rows[i].trim() === "") continue; // skip blank line
+                        // 🚫 Skip rows missing required data
+                        if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
 
-                            var cols = rows[i].split("\t");
-                            if (cols.length < 32) continue; // skip incomplete rows
+                        // 🎯 Filters
+                        if (selectedType !== "ALL" && type !== selectedType) continue;
+                        if (searchText && !caption.toLowerCase().includes(searchText.toLowerCase())) continue;
 
-                            var type = cols[1]?.trim();      // Column B (MUST exist)
-                            var caption = cols[28]?.trim();  // Column AC
-                            var lat = parseFloat(cols[29]);  // Column AD
-                            var lon = parseFloat(cols[30]);  // Column AE
-                            var hq = cols[31]?.trim() || ""; // Column AF
+                        typesSet.add(type);
 
-                            // 🚫 Skip rows missing required data
-                            if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
+                        var color = getHQColor(hq);
 
-                            // 🎯 Filters
-                            if (selectedType !== "ALL" && type !== selectedType) continue;
-                            if (searchText && !caption.toLowerCase().includes(searchText.toLowerCase())) continue;
+                        // 🔍 CLEAN FULL TEXT
+                        var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 
-                            typesSet.add(type);
+                        // 🏷 Heading
+                        var firstLine = caption.split("\n")[0] || "";
+                        var unitName = firstLine
+                            .replace(/Actual Strength.*/i, "")
+                            .replace(/AVAILABLE STRENGTH.*/i, "")
+                            .replace(/Contact No.*/i, "")
+                            .trim();
 
-                            var color = getHQColor(hq);
+                        // 🟢 Actual Strength
+                        var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
+                        var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
 
-                            // 🔍 CLEAN FULL TEXT
-                            var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+                        // 🟠 Available Strength
+                        var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
+                        var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
 
-                            // 🏷 Heading
-                            var firstLine = caption.split("\n")[0] || "";
-                            var unitName = firstLine
-                                .replace(/Actual Strength.*/i, "")
-                                .replace(/AVAILABLE STRENGTH.*/i, "")
-                                .replace(/Contact No.*/i, "")
-                                .trim();
+                        // 📞 Contact
+                        var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
+                        var contact = contactMatch ? contactMatch[1].trim() : "";
 
-                            // 🟢 Actual Strength
-                            var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
-                            var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
+                        // Create marker
+                        var marker = L.circleMarker([lat, lon], {
+                            radius: 8,
+                            fillColor: color,
+                            color: "#ffffff",
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 1
+                        });
 
-                            // 🟠 Available Strength
-                            var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
-                            var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
+                        // Add marker to map
+                        marker.addTo(map);
 
-                            // 📞 Contact
-                            var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
-                            var contact = contactMatch ? contactMatch[1].trim() : "";
+                        // Build popup content
+                        var popupContent = `
+    <div style="
+        min-width:260px;
+        font-family:'Segoe UI';
+        border-radius:12px;
+        overflow:hidden;
+        box-shadow:0 6px 18px rgba(0,0,0,0.25);
+        background:white;
+    ">
 
-                            var marker = new google.maps.Marker({
-                                position: { lat: lat, lng: lon },
-                                map: map,
-                                icon: {
-                                    path: google.maps.SymbolPath.CIRCLE,
-                                    scale: 8,
-                                    fillColor: color,
-                                    fillOpacity: 1,
-                                    strokeColor: "#ffffff",
-                                    strokeWeight: 2
-                                }
-                            });
-
-                            var infoWindow = new google.maps.InfoWindow({
-                                content: `
         <div style="
-            min-width:260px;
-            font-family:'Segoe UI';
-            border-radius:12px;
-            overflow:hidden;
-            box-shadow:0 6px 18px rgba(0,0,0,0.25);
-            background:white;
+            background:linear-gradient(135deg,#0d47a1,#1976d2);
+            color:white;
+            padding:10px 12px;
+            font-weight:700;
+            font-size:14px;
         ">
-            <div style="background:linear-gradient(135deg,#0d47a1,#1976d2);color:white;padding:10px 12px;font-weight:700;font-size:14px;">
-                ${unitName}
-            </div>
-
-            ${actualStrength ? `<div style="padding:10px 12px;background:#e8f5e9;color:#1b5e20;font-size:13px;">${actualStrength}</div>` : ""}
-
-            ${availableStrength ? `<div style="padding:10px 12px;background:#fff3e0;color:#e65100;font-size:13px;">${availableStrength}</div>` : ""}
-
-            ${contact ? `<div style="padding:10px 12px;background:#f3e5f5;color:#4a148c;font-size:13px;">📞 ${contact}</div>` : ""}
-
-            <div style="padding:10px 12px;text-align:right;">
-                <span style="background:linear-gradient(135deg,#3949ab,#1e88e5);color:white;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;">
-                    ${type}
-                </span>
-            </div>
+            ${unitName}
         </div>
-    `
-                            });
 
-                            marker.addListener("click", function () {
-                                infoWindow.open(map, marker);
-                            });
+        ${actualStrength ? `
+        <div style="
+            padding:10px 12px;
+            background:#e8f5e9;
+            color:#1b5e20;
+            font-size:13px;
+        ">
+            ${actualStrength}
+        </div>` : ""}
 
+        ${availableStrength ? `
+        <div style="
+            padding:10px 12px;
+            background:#fff3e0;
+            color:#e65100;
+            font-size:13px;
+        ">
+            ${availableStrength}
+        </div>` : ""}
 
-                            allMarkersData.push(marker);
-                            bounds.extend(new google.maps.LatLng(lat, lon));
-                        }
+        ${contact ? `
+        <div style="
+            padding:10px 12px;
+            background:#f3e5f5;
+            color:#4a148c;
+            font-size:13px;
+        ">
+            📞 ${contact}
+        </div>` : ""}
 
-                        var filter = document.getElementById("typeFilter");
-                        if (filter.options.length <= 1) {
-                            typesSet.forEach(t => {
-                                var opt = document.createElement("option");
-                                opt.value = t;
-                                opt.text = t;
-                                filter.appendChild(opt);
-                            });
-                        }
+        <div style="padding:10px 12px;text-align:right;">
+            <span style="
+                background:linear-gradient(135deg,#3949ab,#1e88e5);
+                color:white;
+                padding:4px 10px;
+                border-radius:12px;
+                font-size:11px;
+                font-weight:600;
+            ">
+                ${type}
+            </span>
+        </div>
 
-                        if (bounds.length > 0) {
-                            map.fitBounds(bounds);
-                        }
+    </div>
+`;
 
-                    });
+                        // Bind popup
+                        marker.bindPopup(popupContent);
+
+                        // Store marker
+                        allMarkersData.push(marker);
+
+                        // Save bounds (DO NOT fit here — only collect)
+                        bounds.push([lat, lon]);
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [30, 30] });
             }
+            var filter = document.getElementById("typeFilter");
+            if (filter.options.length <= 1) {
+                typesSet.forEach(t => {
+                    var opt = document.createElement("option");
+                    opt.value = t;
+                    opt.text = t;
+                    filter.appendChild(opt);
+                });
+            }
+
 
         // 🔄 Initial Load
         loadData();
