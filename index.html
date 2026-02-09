@@ -208,17 +208,17 @@
 
         // Bias search to current map view
         map.on("moveend", function () {
-            var bounds = map.getBounds();
-            var sw = bounds.getSouthWest();
-            var ne = bounds.getNorthEast();
+                var bounds = map.getBounds();
+                var sw = bounds.getSouthWest();
+                var ne = bounds.getNorthEast();
 
-            var gBounds = new google.maps.LatLngBounds(
-                new google.maps.LatLng(sw.lat, sw.lng),
-                new google.maps.LatLng(ne.lat, ne.lng)
-            );
+                var gBounds = new google.maps.LatLngBounds(
+                    new google.maps.LatLng(sw.lat(), sw.lng()),
+                    new google.maps.LatLng(ne.lat(), ne.lng())
+                );
 
-            searchBox.setBounds(gBounds);
-        });
+                searchBox.setBounds(gBounds);
+            });
 
 
         var searchMarker; // single marker for search
@@ -276,12 +276,16 @@
 
         var allMarkersData = [];
 
-        var allMarkersData = [];
 
         // 🚀 LOAD DATA (FULL SCAN + SAFE SKIP)
+
         function loadData(selectedType = "ALL", searchText = "") {
 
                 var bounds = [];
+                map.closePopup();
+                allMarkersData.forEach(function (marker) {
+                map.removeLayer(marker);
+            });
                 allMarkersData = [];
 
                 fetch(sheetURL)
@@ -426,7 +430,7 @@
                         }
 
                         // Fit bounds after loop
-                        if (bounds.length > 0) {
+                        if (bounds.length > 0 && selectedType === "ALL" && searchText === "") {
                             map.fitBounds(bounds, { padding: [30, 30] });
                         }
 
