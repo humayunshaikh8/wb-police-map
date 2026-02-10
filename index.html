@@ -75,6 +75,68 @@
             color: white;
             background: linear-gradient(135deg, #3949ab, #1e88e5);
         }
+
+        #loginScreen{
+    position:fixed;
+    width:100%;
+    height:100%;
+    background:linear-gradient(135deg,#0d47a1,#1976d2);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:5000;
+}
+
+.loginBox{
+    background:white;
+    padding:40px;
+    border-radius:12px;
+    width:320px;
+    text-align:center;
+    box-shadow:0 10px 25px rgba(0,0,0,0.3);
+}
+
+.loginBox input{
+    width:100%;
+    margin:10px 0;
+    padding:10px;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
+
+.loginBox button{
+    width:100%;
+    padding:10px;
+    background:#1976d2;
+    color:white;
+    border:none;
+    border-radius:6px;
+    font-weight:bold;
+}
+
+#loginError{color:red;font-size:13px;}
+.topSearch{
+    position:absolute;
+    top:20px;
+    right:20px;
+    background:white;
+    padding:8px 12px;
+    border-radius:30px;
+    display:flex;
+    align-items:center;
+    box-shadow:0 4px 12px rgba(0,0,0,0.3);
+    z-index:1000;
+}
+.topSearch img{width:20px;margin-right:8px;}
+.topSearch input{border:none;outline:none;width:180px;}
+#clearSearch{cursor:pointer;margin-left:6px;display:none;}
+
+#userPanel{
+    position:fixed;
+    top:20px;
+    right:20px;
+    z-index:2000;
+}
     </style>
 </head>
 
@@ -90,14 +152,105 @@
         <br><br>
         <input type="text" id="searchBox" placeholder="Search unit name..." style="width:160px;padding:4px;">
     </div>
+    <div id="loginScreen">
+        <div class="loginBox">
+            <h2>WB Police GIS Login</h2>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="login()">Login</button>
+            <p id="loginError"></p>
+
+            <div id="userPanel" style="display:none;">
+                <div class="loginBox">
+                    <h3>User Management</h3>
+
+                    <input type="text" id="newUser" placeholder="New Username">
+                    <input type="password" id="newPass" placeholder="New Password">
+                    <button onclick="createUser()">Create User</button>
+
+                    <hr>
+
+                    <input type="text" id="changeUser" placeholder="Username">
+                    <input type="password" id="changePass" placeholder="New Password">
+                    <button onclick="changePassword()">Change Password</button>
+
+                    <p id="userMsg"></p>
+                </div>
+            </div>
+        </div>
+        <div class="topSearch">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg">
+            <input id="pac-input" type="text" placeholder="Search place...">
+            <span id="clearSearch">✖</span>
+        </div>
+    </div>
 
 
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBiP3uf8ZRTvrGB6zsce2iVWj1H_IFnMsg&libraries=places"></script>
 
     <script>
+
+        // Initialize default admin if not exists
+            if (!localStorage.getItem("users")) {
+                localStorage.setItem("users", JSON.stringify({ "admin": "admin" }));
+            }
+
+            function login() {
+                var u = username.value.trim();
+                var p = password.value.trim();
+                var users = JSON.parse(localStorage.getItem("users"));
+
+                if (users[u] && users[u] === p) {
+                    loginScreen.style.display = "none";
+                    showUserPanel();
+                } else {
+                    loginError.innerText = "Invalid Username or Password";
+                }
+            }
+
+            function showUserPanel() {
+                    document.getElementById("userPanel").style.display = "block";
+                }
+
+                function createUser() {
+                    var u = newUser.value.trim();
+                    var p = newPass.value.trim();
+                    var users = JSON.parse(localStorage.getItem("users"));
+
+                    if (!u || !p) {
+                        userMsg.innerText = "Enter username & password";
+                        return;
+                    }
+                    if (users[u]) {
+                        userMsg.innerText = "User already exists!";
+                        return;
+                    }
+
+                    users[u] = p;
+                    localStorage.setItem("users", JSON.stringify(users));
+                    userMsg.innerText = "User created successfully!";
+                    newUser.value = ""; newPass.value = "";
+                }
+
+                function changePassword() {
+                    var u = changeUser.value.trim();
+                    var p = changePass.value.trim();
+                    var users = JSON.parse(localStorage.getItem("users"));
+
+                    if (!users[u]) {
+                        userMsg.innerText = "User not found!";
+                        return;
+                    }
+
+                    users[u] = p;
+                    localStorage.setItem("users", JSON.stringify(users));
+                    userMsg.innerText = "Password changed!";
+                    changeUser.value = ""; changePass.value = "";
+                }
         var map = L.map('map', { zoomControl: true }).setView([23.5, 87.5], 7);
 
         // 🌍 Map Layer
@@ -113,6 +266,33 @@
             showCoverageOnHover: false
         });
         map.addLayer(markers);
+
+        var input = document.getElementById('pac-input');
+            var searchBox = new google.maps.places.SearchBox(input);
+            var searchMarker;
+
+            document.getElementById("clearSearch").onclick = function () {
+                input.value = "";
+                this.style.display = "none";
+                if (searchMarker) map.removeLayer(searchMarker);
+            };
+
+            input.addEventListener("input", function () {
+                clearSearch.style.display = this.value ? "block" : "none";
+            });
+
+            searchBox.addListener('places_changed', function () {
+                var places = searchBox.getPlaces();
+                if (!places.length) return;
+
+                var loc = places[0].geometry.location;
+                var lat = loc.lat();
+                var lng = loc.lng();
+
+                if (searchMarker) map.removeLayer(searchMarker);
+                searchMarker = L.marker([lat, lng]).addTo(map).bindPopup(places[0].name).openPopup();
+                map.setView([lat, lng], 14);
+            });
 
         // 📡 TSV DATA SOURCE
         var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv";
@@ -203,7 +383,7 @@
                         if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
 
                         // 🎯 Filters
-                        if (selectedType !== "ALL" && type !== selectedType) continue;
+                        if (!activeTypes.has(type)) continue;
                         if (searchText && !caption.toLowerCase().includes(searchText.toLowerCase())) continue;
 
                         typesSet.add(type);
@@ -326,49 +506,74 @@
 
         // 🏷 HQ COLOR LEGEND
         var legend = L.control({ position: 'bottomright' });
-        legend.onAdd = function () {
-            var div = L.DomUtil.create('div', 'legend');
-            div.innerHTML += "<b>Legend</b><br>";
+        var activeTypes = new Set();
 
-            const legendItems = {
-                "DG Reserve": "#e6194b",
-                "L&O Duty": "#3cb44b",
-                "Assault Group": "#ffe119",
-                "RAF": "#4363d8",
-                "Lady RAF": "#f58231",
-                "STRACO": "#911eb4",
-                "QRT": "#42d4f4",
-                "Winners Team": "#f032e6",
-                "DMG": "#bfef45",
-                "Head Quarter": "#fabed4",
-                "EF Lines": "#469990",
-                "Police Station": "#dcbeff",
-                "Out Post": "#9A6324",
-                "Town Out Post": "#fffac8",
-                "IC": "#800000",
-                "Border Out Post": "#aaffc3",
-                "Rural Out Post": "#808000",
-                "Beat House": "#ffd8b1",
-                "Traffic Guard": "#000075",
-                "Sub-TG": "#a9a9a9",
-                "Camp": "#42f572",
-                "House Guard": "#968859",
-                "AS Check": "#e6beff",
-                "Court": "#42f5e6",
-                "Office": "#c98d8d",
-                "Others": "#000000"
+            legend.onAdd = function () {
+                var div = L.DomUtil.create('div', 'legend');
+                div.innerHTML = "<b>Filter Units</b><br>";
 
+                div.innerHTML += `<label><input type="checkbox" id="selectAll" checked> Select All</label><br><hr>`;
+
+                const legendItems = {
+                    "DG RESERVE": "#e6194b",
+                    "L&O DUTY": "#3cb44b",
+                    "AG": "#ffe119",
+                    "RAF": "#4363d8",
+                    "LADY RAF": "#f58231",
+                    "STRACO": "#911eb4",
+                    "QRT": "#42d4f4",
+                    "WINNERS TEAM": "#f032e6",
+                    "DMG": "#bfef45",
+                    "HQ": "#fabed4",
+                    "EF LINES": "#469990",
+                    "PS": "#dcbeff",
+                    "OP": "#9A6324",
+                    "TOP": "#fffac8",
+                    "IC": "#800000",
+                    "BOP": "#aaffc3",
+                    "ROP": "#808000",
+                    "BEAT HOUSE": "#ffd8b1",
+                    "TG": "#000075",
+                    "STG": "#a9a9a9",
+                    "CAMP": "#42f572",
+                    "HOUSE GUARD": "#968859",
+                    "AS CHECK": "#e6beff",
+                    "COURT": "#42f5e6",
+                    "OFFICE": "#c98d8d"
+                };
+
+                for (let key in legendItems) {
+                    activeTypes.add(key);
+                    div.innerHTML += `
+        <label>
+            <input type="checkbox" class="unitCheck" value="${key}" checked>
+            <span style="background:${legendItems[key]};width:12px;height:12px;display:inline-block;border-radius:50%;margin-right:6px;"></span>
+            ${key}
+        </label><br>`;
+                }
+
+                return div;
             };
-
-            for (let key in legendItems) {
-                div.innerHTML += `<div style="margin:4px 0;">
-            <span style="display:inline-block;width:14px;height:14px;border-radius:50%;
-            background:${legendItems[key]};margin-right:6px;"></span>${key}
-        </div>`;
-            }
-            return div;
-        };
         legend.addTo(map);
+
+        document.addEventListener("change", function (e) {
+
+                if (e.target.id === "selectAll") {
+                    var checked = e.target.checked;
+                    document.querySelectorAll(".unitCheck").forEach(cb => {
+                        cb.checked = checked;
+                        if (checked) activeTypes.add(cb.value);
+                        else activeTypes.delete(cb.value);
+                    });
+                    loadData();
+                }
+
+                if (e.target.classList.contains("unitCheck")) {
+                    if (e.target.checked) activeTypes.add(e.target.value);
+                    else activeTypes.delete(e.target.value);
+                    loadData();
+                }
+            });
     </script>
 
 
