@@ -7,7 +7,8 @@
     <title>WB Police Force Details</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
 
     <style>
         body {
@@ -74,66 +75,12 @@
             color: white;
             background: linear-gradient(135deg, #3949ab, #1e88e5);
         }
-
-        /* ===== Premium Google Search (Top Right) ===== */
-        .top-right-search {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 1200;
-
-            display: flex;
-            align-items: center;
-            padding: 8px 14px 8px 40px;
-            width: 300px;
-
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            border-radius: 40px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-            transition: all 0.3s ease;
-        }
-
-        .top-right-search:hover {
-            box-shadow: 0 8px 22px rgba(13, 71, 161, 0.35);
-        }
-
-        .search-google-logo {
-            position: absolute;
-            left: 14px;
-            width: 20px;
-            opacity: 0.9;
-            pointer-events: none;
-        }
-
-        #pac-input {
-            width: 100%;
-            border: none;
-            outline: none;
-            background: transparent;
-            font-size: 14px;
-            font-weight: 500;
-            color: #333;
-        }
-
-        .google-legend {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(6px);
-            padding: 14px;
-            border-radius: 12px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-            font-family: 'Segoe UI', sans-serif;
-        }
     </style>
 </head>
 
 <body>
 
     <div class="header"> WB Police Force Details</div>
-    <div class="top-right-search">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" class="search-google-logo">
-        <input id="pac-input" type="text" placeholder="Search place on map..." />
-    </div>
 
     <div class="filterBox">
         <b>Filter by Unit Type</b><br>
@@ -142,112 +89,30 @@
         </select>
         <br><br>
         <input type="text" id="searchBox" placeholder="Search unit name..." style="width:160px;padding:4px;">
-
     </div>
 
 
     <div id="map"></div>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBiP3uf8ZRTvrGB6zsce2iVWj1H_IFnMsg&libraries=places"></script>
 
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
     <script>
-        var map = L.map('map').setView([23.5, 87.5], 7);
+        var map = L.map('map', { zoomControl: true }).setView([23.5, 87.5], 7);
 
-        L.tileLayer("https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
-            maxZoom: 20,
-            subdomains: ["mt0", "mt1", "mt2", "mt3"]
+        // 🌍 Map Layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 19
         }).addTo(map);
 
-        // 🏷 Google Maps Legend
-        var legendDiv = document.createElement("div");
-        legendDiv.className = "google-legend";
-
-        legendDiv.innerHTML = "<b>Legend</b><br>";
-
-        const legendItems = {
-            "DG Reserve": "#FF0000",
-            "HQ": "#0000FF",
-            "DMG": "#00FF00",
-            "PS": "#FFFF00",
-            "TG": "#FF00FF",
-            "STG": "#7FFFD4",
-            "OP": "#A52A2A",
-            "TOP": "#808000",
-            "IC": "#008000",
-            "ROP": "#FFA500",
-            "BOP": "#ADD8E6",
-            "CAMP": "#00FFFF"
-        };
-
-        for (let key in legendItems) {
-            var item = document.createElement("div");
-            item.style.margin = "4px 0";
-            item.innerHTML = `
-        <span style="
-            display:inline-block;
-            width:14px;
-            height:14px;
-            border-radius:50%;
-            background:${legendItems[key]};
-            margin-right:6px;">
-        </span>${key}
-    `;
-            legendDiv.appendChild(item);
-        }
-
-        // 📍 Add legend to map (BOTTOM RIGHT)
-        var legend = L.control({ position: 'bottomright' });
-        legend.onAdd = function () { return legendDiv; };
-        legend.addTo(map);
-
-        // 🌍 Google Places Search Integration
-        var input = document.getElementById('pac-input');
-        var searchBox = new google.maps.places.SearchBox(input);
-
-        // Bias search to current map view
-        map.on("moveend", function () {
-                var bounds = map.getBounds();
-                var sw = bounds.getSouthWest();
-                var ne = bounds.getNorthEast();
-
-                var gBounds = new google.maps.LatLngBounds(
-                    new google.maps.LatLng(sw.lat(), sw.lng()),
-                    new google.maps.LatLng(ne.lat(), ne.lng())
-                );
-
-                searchBox.setBounds(gBounds);
-            });
-
-
-        var searchMarker; // single marker for search
-
-        searchBox.addListener('places_changed', function () {
-            var places = searchBox.getPlaces();
-            if (!places || places.length === 0) return;
-
-            var place = places[0];
-            if (!place.geometry) return;
-
-            var location = place.geometry.location;
-            var lat = location.lat();
-            var lng = location.lng();
-
-            if (searchMarker) {
-                map.removeLayer(searchMarker);
-            }
-
-            searchMarker = L.marker([lat, lng]).addTo(map)
-                .bindPopup("📍 " + place.name)
-                .openPopup();
-
-            map.setView([lat, lng], 14);
-        });
-        // 🌍 Premium Map Layer
-
-
         // 🔥 Cluster Group
+        var markers = L.markerClusterGroup({
+            disableClusteringAtZoom: 13,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false
+        });
+        map.addLayer(markers);
 
         // 📡 TSV DATA SOURCE
         var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv";
@@ -255,111 +120,122 @@
         // 🎨 HQ COLOR MAP
         function getHQColor(hq) {
             const colors = {
-                "DG": "#FF0000",
-                "HQ": "#0000FF",
-                "DMG": "#00FF00",
-                "PS": "#FFFF00",
-                "TG": "#FF00FF",
-                "STG": "#7FFFD4",
-                "OP": "#A52A2A",
-                "TOP": "#808000",
-                "IC": "#008000",
-                "ROP": "#FFA500",
-                "BOP": "#ADD8E6",
-                "CAMP": "#00FFFF"
+                "DG RESERVE": "#e6194b",
+                "L&O DUTY": "#3cb44b",
+                "AG": "#ffe119",
+                "RAF": "#4363d8",
+                "LADY RAF": "#f58231",
+                "STRACO": "#911eb4",
+                "QRT": "#42d4f4",
+                "WINNERS TEAM": "#f032e6",
+                "DMG": "#bfef45",
+                "HQ": "#fabed4",
+                "EF LINES": "#469990",
+                "PS": "#dcbeff",
+                "OP": "#9A6324",
+                "TOP": "#fffac8",
+                "IC": "#800000",
+                "BOP": "#aaffc3",
+                "ROP": "#808000",
+                "BEAT HOUSE": "#ffd8b1",
+                "TG": "#000075",
+                "STG": "#a9a9a9",
+                "CAMP": "#42f572",
+                "HOUSE GUARD": "#968859",
+                "AS CHECK": "#e6beff",
+                "COURT": "#42f5e6",
+                "OFFICE": "#c98d8d"
+
+
+
             };
-            return colors[hq] || "#555555";
+            return colors[hq] || "#000000";
         }
 
         // ⭐ Premium Glowing Icon
-
+        function createPremiumIcon(color) {
+            return L.divIcon({
+                className: '',
+                html: `<div style="
+            width:18px;height:18px;
+            background:${color};
+            border-radius:50%;
+            border:3px solid white;
+            box-shadow:0 0 6px ${color},0 0 10px ${color},0 0 16px ${color};
+        "></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+        }
 
         var allMarkersData = [];
 
-
         // 🚀 LOAD DATA (FULL SCAN + SAFE SKIP)
-
         function loadData(selectedType = "ALL", searchText = "") {
 
-                var bounds = [];
-                map.closePopup();
-                allMarkersData.forEach(function (marker) {
-                map.removeLayer(marker);
-            });
-                allMarkersData = [];
+            markers.clearLayers();
+            allMarkersData = [];
 
-                fetch(sheetURL)
-                    .then(function (response) {
-                        return response.text();
-                    })
-                    .then(function (data) {
+            fetch(sheetURL)
+                .then(r => r.text())
+                .then(data => {
 
-                        var rows = data.split("\n"); // keep all rows
-                        var typesSet = new Set();
+                    var rows = data.split("\n"); // don't trim, keep full row count
+                    var typesSet = new Set();
+                    var bounds = [];
 
-                        var maxRows = Math.min(rows.length, 4000); // scan up to 4000 rows
+                    var maxRows = Math.min(rows.length, 4000); // scan up to 4000 rows
 
-                        for (var i = 1; i < maxRows; i++) {
+                    for (var i = 1; i < maxRows; i++) {
 
-                            if (!rows[i] || rows[i].trim() === "") continue; // skip blank lines
+                        if (!rows[i] || rows[i].trim() === "") continue; // skip blank line
 
-                            var cols = rows[i].split("\t");
-                            if (cols.length < 32) continue; // skip incomplete rows
+                        var cols = rows[i].split("\t");
+                        if (cols.length < 32) continue; // skip incomplete rows
 
-                            var type = cols[1] ? cols[1].trim() : "";
-                            var caption = cols[28] ? cols[28].trim() : "";
-                            var lat = parseFloat(cols[29]);
-                            var lon = parseFloat(cols[30]);
-                            var hq = cols[31] ? cols[31].trim() : "";
+                        var type = cols[1]?.trim();      // Column B (MUST exist)
+                        var caption = cols[28]?.trim();  // Column AC
+                        var lat = parseFloat(cols[29]);  // Column AD
+                        var lon = parseFloat(cols[30]);  // Column AE
+                        var hq = cols[31]?.trim() || ""; // Column AF
 
-                            // Skip rows missing required data
-                            if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
+                        // 🚫 Skip rows missing required data
+                        if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
 
-                            // Apply filters
-                            if (selectedType !== "ALL" && type !== selectedType) continue;
-                            if (searchText && !caption.toLowerCase().includes(searchText.toLowerCase())) continue;
+                        // 🎯 Filters
+                        if (selectedType !== "ALL" && type !== selectedType) continue;
+                        if (searchText && !caption.toLowerCase().includes(searchText.toLowerCase())) continue;
 
-                            typesSet.add(type);
+                        typesSet.add(type);
 
-                            var color = getHQColor(hq);
+                        var color = getHQColor(hq);
 
-                            // Clean full text
-                            var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+                        // 🔍 CLEAN FULL TEXT
+                        var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 
-                            // Extract heading (unit name)
-                            var firstLine = caption.split("\n")[0] || "";
-                            var unitName = firstLine
-                                .replace(/Actual Strength.*/i, "")
-                                .replace(/AVAILABLE STRENGTH.*/i, "")
-                                .replace(/Contact No.*/i, "")
-                                .trim();
+                        // 🏷 Heading
+                        var firstLine = caption.split("\n")[0] || "";
+                        var unitName = firstLine
+                            .replace(/Actual Strength.*/i, "")
+                            .replace(/AVAILABLE STRENGTH.*/i, "")
+                            .replace(/Contact No.*/i, "")
+                            .trim();
 
-                            // Extract Actual Strength
-                            var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
-                            var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
+                        // 🟢 Actual Strength
+                        var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
+                        var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
 
-                            // Extract Available Strength
-                            var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
-                            var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
+                        // 🟠 Available Strength
+                        var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
+                        var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
 
-                            // Extract Contact
-                            var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
-                            var contact = contactMatch ? contactMatch[1].trim() : "";
+                        // 📞 Contact
+                        var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
+                        var contact = contactMatch ? contactMatch[1].trim() : "";
 
-                            // Create marker
-                            var marker = L.circleMarker([lat, lon], {
-                                radius: 8,
-                                fillColor: color,
-                                color: "#ffffff",
-                                weight: 2,
-                                opacity: 1,
-                                fillOpacity: 1
-                            });
-
-                            marker.addTo(map);
-
-                            // Popup design
-                            var popupContent = `
+                        var marker = L.marker([lat, lon], {
+                            icon: createPremiumIcon(color)
+                        }).bindPopup(`
                 <div style="
                     min-width:260px;
                     font-family:'Segoe UI';
@@ -368,44 +244,29 @@
                     box-shadow:0 6px 18px rgba(0,0,0,0.25);
                     background:white;
                 ">
+
                     <div style="
                         background:linear-gradient(135deg,#0d47a1,#1976d2);
                         color:white;
                         padding:10px 12px;
                         font-weight:700;
-                        font-size:14px;
-                    ">
+                        font-size:14px;">
                         ${unitName}
                     </div>
 
                     ${actualStrength ? `
-                    <div style="
-                        padding:10px 12px;
-                        background:#e8f5e9;
-                        color:#1b5e20;
-                        font-size:13px;
-                    ">
-                        ${actualStrength}
+                    <div style="padding:10px 12px;background:#e8f5e9;color:#1b5e20;font-size:13px;">
+                        <b>Actual Strength</b><br>${actualStrength}
                     </div>` : ""}
 
                     ${availableStrength ? `
-                    <div style="
-                        padding:10px 12px;
-                        background:#fff3e0;
-                        color:#e65100;
-                        font-size:13px;
-                    ">
-                        ${availableStrength}
+                    <div style="padding:10px 12px;background:#fff3e0;color:#e65100;font-size:13px;">
+                        <b>Available Strength</b><br>${availableStrength}
                     </div>` : ""}
 
                     ${contact ? `
-                    <div style="
-                        padding:10px 12px;
-                        background:#f3e5f5;
-                        color:#4a148c;
-                        font-size:13px;
-                    ">
-                        📞 ${contact}
+                    <div style="padding:10px 12px;background:#f3e5f5;color:#4a148c;font-size:13px;">
+                        📞 <b>${contact}</b>
                     </div>` : ""}
 
                     <div style="padding:10px 12px;text-align:right;">
@@ -415,42 +276,35 @@
                             padding:4px 10px;
                             border-radius:12px;
                             font-size:11px;
-                            font-weight:600;
-                        ">
+                            font-weight:600;">
                             ${type}
                         </span>
                     </div>
+
                 </div>
-                `;
+            `);
 
-                            marker.bindPopup(popupContent);
+                        markers.addLayer(marker);
+                        allMarkersData.push(marker);
+                        bounds.push([lat, lon]);
+                    }
 
-                            allMarkersData.push(marker);
-                            bounds.push([lat, lon]);
-                        }
+                    var filter = document.getElementById("typeFilter");
+                    if (filter.options.length <= 1) {
+                        typesSet.forEach(t => {
+                            var opt = document.createElement("option");
+                            opt.value = t;
+                            opt.text = t;
+                            filter.appendChild(opt);
+                        });
+                    }
 
-                        // Fit bounds after loop
-                        if (bounds.length > 0 && selectedType === "ALL" && searchText === "") {
-                            map.fitBounds(bounds, { padding: [30, 30] });
-                        }
+                    if (bounds.length > 0) {
+                        map.fitBounds(bounds, { padding: [30, 30] });
+                    }
 
-                        // Populate filter only once
-                        var filter = document.getElementById("typeFilter");
-                        if (filter.options.length <= 1) {
-                            typesSet.forEach(function (t) {
-                                var opt = document.createElement("option");
-                                opt.value = t;
-                                opt.text = t;
-                                filter.appendChild(opt);
-                            });
-                        }
-
-                    })
-                    .catch(function (error) {
-                        console.error("Data load error:", error);
-                    });
-            }
-
+                });
+        }
 
         // 🔄 Initial Load
         loadData();
@@ -465,15 +319,59 @@
             loadData(document.getElementById("typeFilter").value, this.value);
         });
 
-        // 🔁 AUTO REFRESH EVERY 30 SECONDS
+        // 🔁 AUTO REFRESH
         setInterval(function () {
             loadData(document.getElementById("typeFilter").value, document.getElementById("searchBox").value);
-        }, 180000);
+        }, 600000);
 
         // 🏷 HQ COLOR LEGEND
+        var legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function () {
+            var div = L.DomUtil.create('div', 'legend');
+            div.innerHTML += "<b>Legend</b><br>";
 
+            const legendItems = {
+                "DG Reserve": "#e6194b",
+                "L&O Duty": "#3cb44b",
+                "Assault Group": "#ffe119",
+                "RAF": "#4363d8",
+                "Lady RAF": "#f58231",
+                "STRACO": "#911eb4",
+                "QRT": "#42d4f4",
+                "Winners Team": "#f032e6",
+                "DMG": "#bfef45",
+                "Head Quarter": "#fabed4",
+                "EF Lines": "#469990",
+                "Police Station": "#dcbeff",
+                "Out Post": "#9A6324",
+                "Town Out Post": "#fffac8",
+                "IC": "#800000",
+                "Border Out Post": "#aaffc3",
+                "Rural Out Post": "#808000",
+                "Beat House": "#ffd8b1",
+                "Traffic Guard": "#000075",
+                "Sub-TG": "#a9a9a9",
+                "Camp": "#42f572",
+                "House Guard": "#968859",
+                "AS Check": "#e6beff",
+                "Court": "#42f5e6",
+                "Office": "#c98d8d",
+                "Others": "#000000"
 
+            };
+
+            for (let key in legendItems) {
+                div.innerHTML += `<div style="margin:4px 0;">
+            <span style="display:inline-block;width:14px;height:14px;border-radius:50%;
+            background:${legendItems[key]};margin-right:6px;"></span>${key}
+        </div>`;
+            }
+            return div;
+        };
+        legend.addTo(map);
     </script>
+
+
 </body>
 
 </html>
