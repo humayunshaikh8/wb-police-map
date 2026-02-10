@@ -116,7 +116,7 @@
 
 #loginError{color:red;font-size:13px;}
 .topSearch{
-    position:absolute;
+    position:fixed;
     top:20px;
     right:20px;
     background:white;
@@ -137,12 +137,14 @@
     right:20px;
     z-index:2000;
 }
+
+#map { z-index: 1; }
     </style>
 </head>
 
 <body>
 
-    <div class="header"> WB Police Force Details</div>
+    <div class="header">WB Police Force Details</div>
 
     <div class="filterBox">
         <b>Filter by Unit Type</b><br>
@@ -152,40 +154,47 @@
         <br><br>
         <input type="text" id="searchBox" placeholder="Search unit name..." style="width:160px;padding:4px;">
     </div>
+
+    <!-- 🔐 LOGIN SCREEN -->
     <div id="loginScreen">
         <div class="loginBox">
-            <h2>WB Police GIS Login</h2>
+            <h2>WB Police Force Details</h2>
             <input type="text" id="username" placeholder="Username">
             <input type="password" id="password" placeholder="Password">
             <button onclick="login()">Login</button>
             <p id="loginError"></p>
-
-            <div id="userPanel" style="display:none;">
-                <div class="loginBox">
-                    <h3>User Management</h3>
-
-                    <input type="text" id="newUser" placeholder="New Username">
-                    <input type="password" id="newPass" placeholder="New Password">
-                    <button onclick="createUser()">Create User</button>
-
-                    <hr>
-
-                    <input type="text" id="changeUser" placeholder="Username">
-                    <input type="password" id="changePass" placeholder="New Password">
-                    <button onclick="changePassword()">Change Password</button>
-
-                    <p id="userMsg"></p>
-                </div>
-            </div>
-        </div>
-        <div class="topSearch">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg">
-            <input id="pac-input" type="text" placeholder="Search place...">
-            <span id="clearSearch">✖</span>
         </div>
     </div>
 
+    <!-- 👤 USER MANAGEMENT PANEL (VISIBLE AFTER LOGIN) -->
+    <div id="userPanel" style="display:none;">
+        <div class="loginBox">
+            <h3>User Management</h3>
 
+            <input type="text" id="newUser" placeholder="New Username">
+            <input type="password" id="newPass" placeholder="New Password">
+            <button onclick="createUser()">Create User</button>
+
+            <hr>
+
+            <input type="text" id="changeUser" placeholder="Username">
+            <input type="password" id="changePass" placeholder="New Password">
+            <button onclick="changePassword()">Change Password</button>
+
+            <button onclick="logout()" style="background:#d32f2f;margin-top:10px;">Logout</button>
+
+            <p id="userMsg"></p>
+        </div>
+    </div>
+
+    <!-- 🔎 GOOGLE PLACE SEARCH (TOP RIGHT AFTER LOGIN) -->
+    <div class="topSearch" id="googleSearchBox" style="display:none;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg">
+        <input id="pac-input" type="text" placeholder="Search place...">
+        <span id="clearSearch">✖</span>
+    </div>
+
+    <!-- 🗺 MAP -->
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -194,23 +203,38 @@
 
     <script>
 
-        // Initialize default admin if not exists
+        // Create default admin
             if (!localStorage.getItem("users")) {
                 localStorage.setItem("users", JSON.stringify({ "admin": "admin" }));
             }
 
-            function login() {
-                var u = username.value.trim();
-                var p = password.value.trim();
-                var users = JSON.parse(localStorage.getItem("users"));
-
-                if (users[u] && users[u] === p) {
-                    loginScreen.style.display = "none";
-                    showUserPanel();
-                } else {
-                    loginError.innerText = "Invalid Username or Password";
-                }
+            // Auto session check
+            if (sessionStorage.getItem("loggedIn") === "true") {
+                loginScreen.style.display = "none";
+                googleSearchBox.style.display = "flex";
+                showUserPanel();
             }
+
+            function login() {
+                    var u = username.value.trim();
+                    var p = password.value.trim();
+                    var users = JSON.parse(localStorage.getItem("users"));
+
+                    if (users[u] && users[u] === p) {
+                        sessionStorage.setItem("loggedIn", "true");
+                        sessionStorage.setItem("currentUser", u);
+                        document.getElementById("loginScreen").style.display = "none";
+                        document.getElementById("googleSearchBox").style.display = "flex";
+                        document.getElementById("userPanel").style.display = "block";
+
+                        setTimeout(function () {
+                            map.invalidateSize();   // 🔥 IMPORTANT
+                            loadData();
+                        }, 300); // 🔥 IMPORTANT
+                    } else {
+                        loginError.innerText = "Invalid Username or Password";
+                    }
+                }
 
             function showUserPanel() {
                     document.getElementById("userPanel").style.display = "block";
@@ -277,9 +301,11 @@
                 if (searchMarker) map.removeLayer(searchMarker);
             };
 
+            var clearBtn = document.getElementById("clearSearch");
+
             input.addEventListener("input", function () {
-                clearSearch.style.display = this.value ? "block" : "none";
-            });
+                    clearBtn.style.display = this.value ? "block" : "none";
+                });
 
             searchBox.addListener('places_changed', function () {
                 var places = searchBox.getPlaces();
@@ -383,7 +409,7 @@
                         if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
 
                         // 🎯 Filters
-                        if (!activeTypes.has(type)) continue;
+                        if (activeTypes.size > 0 && !activeTypes.has(type)) continue;
                         if (searchText && !caption.toLowerCase().includes(searchText.toLowerCase())) continue;
 
                         typesSet.add(type);
@@ -486,8 +512,7 @@
                 });
         }
 
-        // 🔄 Initial Load
-        loadData();
+
 
         // 🎛 Type Filter
         document.getElementById("typeFilter").addEventListener("change", function () {
@@ -510,7 +535,7 @@
 
             legend.onAdd = function () {
                 var div = L.DomUtil.create('div', 'legend');
-                div.innerHTML = "<b>Filter Units</b><br>";
+                div.innerHTML = "<b>Filter Legends</b><br>";
 
                 div.innerHTML += `<label><input type="checkbox" id="selectAll" checked> Select All</label><br><hr>`;
 
@@ -556,6 +581,8 @@
             };
         legend.addTo(map);
 
+
+
         document.addEventListener("change", function (e) {
 
                 if (e.target.id === "selectAll") {
@@ -574,6 +601,28 @@
                     loadData();
                 }
             });
+
+            function logout() {
+                    sessionStorage.clear();
+                    document.getElementById("googleSearchBox").style.display = "none";
+                    document.getElementById("userPanel").style.display = "none";
+                    document.getElementById("loginScreen").style.display = "flex";
+
+                    setTimeout(function () {
+                        map.invalidateSize();
+                    }, 300);
+                }
+
+                if (sessionStorage.getItem("loggedIn") === "true") {
+                        document.getElementById("loginScreen").style.display = "none";
+                        document.getElementById("googleSearchBox").style.display = "flex";
+                        document.getElementById("userPanel").style.display = "block";
+
+                        setTimeout(function () {
+                            map.invalidateSize();   // 🔥 IMPORTANT
+                            loadData();
+                        }, 300);
+                    }
     </script>
 
 
