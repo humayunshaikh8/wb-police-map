@@ -11,134 +11,383 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
 
     <style>
+        :root {
+            --brand1: #0d47a1;
+            --brand2: #1976d2;
+            --brand3: #1e88e5;
+            --glass: rgba(255, 255, 255, 0.86);
+            --glassBorder: rgba(255, 255, 255, 0.35);
+            --shadow1: 0 10px 30px rgba(0, 0, 0, 0.25);
+            --shadow2: 0 6px 18px rgba(0, 0, 0, 0.20);
+            --radiusXL: 22px;
+            --radiusPill: 999px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
             font-family: 'Segoe UI', sans-serif;
+            background: #f4f6f9;
         }
 
         #map {
             height: 100vh;
+            filter: saturate(1.05) contrast(1.05);
+            z-index: 1;
         }
 
         .header {
             position: absolute;
-            top: 10px;
+            top: 15px;
             left: 50%;
             transform: translateX(-50%);
-            background: linear-gradient(90deg, #0d47a1, #1976d2);
+            background: linear-gradient(135deg, var(--brand1), var(--brand2));
             color: white;
-            padding: 10px 24px;
-            border-radius: 30px;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
+            padding: 12px 30px;
+            border-radius: 40px;
+            font-weight: 800;
+            letter-spacing: .6px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+            z-index: 3000;
+            user-select: none;
         }
 
+        /* Premium glass cards */
         .legend,
-        .filterBox {
+        .filterBox,
+        #googleSearchBox,
+        #userMenu {
             position: absolute;
-            background: white;
-            padding: 12px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
+            background: var(--glass);
+            border: 1px solid var(--glassBorder);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 14px;
+            box-shadow: var(--shadow2);
+            z-index: 2000;
+        }
+
+        .filterBox {
+            top: 85px;
+            left: 20px;
+            padding: 14px 14px 12px 14px;
+            min-width: 215px;
+        }
+
+        .filterBox b {
+            display: inline-block;
+            margin-bottom: 8px;
+            color: #0b2f6f;
+            font-size: 13px;
+            letter-spacing: .2px;
+        }
+
+        #typeFilter {
+            width: 100%;
+            padding: 10px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(13, 71, 161, 0.18);
+            outline: none;
+            background: rgba(255, 255, 255, 0.9);
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: 600;
+            color: #0d47a1;
+        }
+
+        #searchBox {
+            width: 100%;
+            padding: 10px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(13, 71, 161, 0.18);
+            outline: none;
+            background: rgba(255, 255, 255, 0.9);
+            font-family: 'Segoe UI', sans-serif;
         }
 
         .legend {
             bottom: 20px;
-            left: 20px;
+            right: 20px;
+            padding: 14px 14px 12px 14px;
             font-size: 13px;
+            max-height: 52vh;
+            overflow: auto;
         }
 
-        .filterBox {
-            top: 80px;
-            left: 20px;
+        .legend b {
+            color: #0b2f6f;
+            letter-spacing: .2px;
         }
 
-        .popup-card {
-            min-width: 180px;
+        .legend hr {
+            border: none;
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            margin: 10px 0;
         }
 
-        .popup-title {
-            font-weight: 700;
-            font-size: 16px;
-            color: #0d47a1;
-            margin-bottom: 6px;
+        .legend label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 2px;
+            cursor: pointer;
+            user-select: none;
         }
 
-        .popup-type {
-            display: inline-block;
-            padding: 4px 10px;
+        .legend input[type="checkbox"] {
+            transform: scale(1.05);
+            cursor: pointer;
+        }
+
+        .legend::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .legend::-webkit-scrollbar-thumb {
+            background: rgba(13, 71, 161, 0.22);
+            border-radius: 999px;
+        }
+
+        .legend::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.04);
+            border-radius: 999px;
+        }
+
+        /* LOGIN SCREEN */
+        #loginScreen {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--brand1), var(--brand2));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 7000;
+        }
+
+        .loginBox {
+            background: rgba(255, 255, 255, 0.96);
+            padding: 38px 34px;
+            border-radius: var(--radiusXL);
+            width: 340px;
+            text-align: center;
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .loginBox h2 {
+            margin: 0 0 12px 0;
+            color: #0b2f6f;
+            letter-spacing: .4px;
+        }
+
+        .loginBox input {
+            width: 100%;
+            margin: 10px 0;
+            padding: 12px 12px;
             border-radius: 14px;
-            font-size: 12px;
-            font-weight: 600;
-            color: white;
-            background: linear-gradient(135deg, #3949ab, #1e88e5);
+            border: 1px solid rgba(13, 71, 161, 0.18);
+            outline: none;
+            background: rgba(255, 255, 255, 0.92);
+            font-family: 'Segoe UI', sans-serif;
         }
 
-        #loginScreen{
-    position:fixed;
-    width:100%;
-    height:100%;
-    background:linear-gradient(135deg,#0d47a1,#1976d2);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    z-index:5000;
-}
+        .loginBox input:focus {
+            border-color: rgba(30, 136, 229, 0.65);
+            box-shadow: 0 0 0 4px rgba(30, 136, 229, 0.16);
+        }
 
-.loginBox{
-    background:white;
-    padding:40px;
-    border-radius:12px;
-    width:320px;
-    text-align:center;
-    box-shadow:0 10px 25px rgba(0,0,0,0.3);
-}
+        .loginBox button {
+            width: 100%;
+            padding: 12px 12px;
+            background: linear-gradient(135deg, #1565c0, #1e88e5);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-weight: 800;
+            letter-spacing: .2px;
+            cursor: pointer;
+            box-shadow: 0 10px 22px rgba(25, 118, 210, 0.25);
+            transition: transform .14s ease, box-shadow .14s ease;
+        }
 
-.loginBox input{
-    width:100%;
-    margin:10px 0;
-    padding:10px;
-    border-radius:6px;
-    border:1px solid #ccc;
-}
+        .loginBox button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(25, 118, 210, 0.35);
+        }
 
-.loginBox button{
-    width:100%;
-    padding:10px;
-    background:#1976d2;
-    color:white;
-    border:none;
-    border-radius:6px;
-    font-weight:bold;
-}
+        .loginBox button:active {
+            transform: translateY(0px) scale(0.99);
+        }
 
-#loginError{color:red;font-size:13px;}
-.topSearch{
-    position:fixed;
-    top:20px;
-    right:20px;
-    background:white;
-    padding:8px 12px;
-    border-radius:30px;
-    display:flex;
-    align-items:center;
-    box-shadow:0 4px 12px rgba(0,0,0,0.3);
-    z-index:1000;
-}
-.topSearch img{width:20px;margin-right:8px;}
-.topSearch input{border:none;outline:none;width:180px;}
-#clearSearch{cursor:pointer;margin-left:6px;display:none;}
+        #loginError {
+            color: #d32f2f;
+            font-size: 13px;
+            margin: 10px 0 0 0;
+            min-height: 16px;
+        }
 
-#userPanel{
-    position:fixed;
-    top:20px;
-    right:20px;
-    z-index:2000;
-}
+        /* TOP BAR */
+        #topBar {
+            position: fixed;
+            top: 15px;
+            right: 20px;
+            z-index: 3500;
+            font-family: 'Segoe UI';
+            display: none;
+        }
 
-#map { z-index: 1; }
+        #userInfo {
+            background: linear-gradient(135deg, #1565c0, #1e88e5);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.30);
+            font-weight: 700;
+            transition: transform .18s ease, box-shadow .18s ease;
+            user-select: none;
+        }
+
+        #userInfo:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.32);
+        }
+
+        #userMenu {
+            display: none;
+            position: relative;
+            margin-top: 10px;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+        }
+
+        .menuItem {
+            padding: 12px 16px;
+            cursor: pointer;
+            font-weight: 650;
+            transition: .2s;
+            white-space: nowrap;
+        }
+
+        .menuItem:hover {
+            background: linear-gradient(90deg, #e3f2fd, #bbdefb);
+        }
+
+        /* GOOGLE SEARCH PREMIUM */
+        #googleSearchBox {
+            position: relative;
+            margin-top: 12px;
+            padding: 8px 14px;
+            border-radius: 30px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #googleSearchBox input {
+            border: none;
+            outline: none;
+            width: 200px;
+            font-size: 14px;
+            background: transparent;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        #clearSearch {
+            cursor: pointer;
+            margin-left: 2px;
+            display: none;
+            user-select: none;
+            font-weight: 900;
+            opacity: .75;
+            transition: .2s;
+        }
+
+        #clearSearch:hover {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        /* USER MANAGEMENT MODAL */
+        #userPanelModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.45);
+            justify-content: center;
+            align-items: center;
+            z-index: 6500;
+        }
+
+        #userPanelModal .loginBox h3 {
+            margin: 0 0 12px 0;
+            color: #0b2f6f;
+        }
+
+        #userPanelModal .loginBox hr {
+            border: none;
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            margin: 14px 0;
+        }
+
+        #userPanelModal .loginBox button[style*="background:#999"] {
+            background: linear-gradient(135deg, #8e8e8e, #b0b0b0) !important;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+        }
+
+        #userMsg {
+            margin: 10px 0 0 0;
+            font-size: 13px;
+            min-height: 16px;
+            color: #0b2f6f;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 6px rgba(0, 0, 0, 0.35); }
+            50% { box-shadow: 0 0 18px rgba(0, 0, 0, 0.75); }
+            100% { box-shadow: 0 0 6px rgba(0, 0, 0, 0.35); }
+        }
+
+        #loadingScreen {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--brand1), var(--brand2));
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: .3px;
+            z-index: 8000;
+        }
+
+        /* Leaflet popup polish */
+        .leaflet-popup-content-wrapper {
+            border-radius: 16px !important;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.30) !important;
+            overflow: hidden;
+        }
+
+        .leaflet-popup-content {
+            margin: 0 !important;
+        }
+
+        .leaflet-control-zoom a {
+            border-radius: 10px !important;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18) !important;
+        }
     </style>
 </head>
 
@@ -152,7 +401,7 @@
             <option value="ALL">All Units</option>
         </select>
         <br><br>
-        <input type="text" id="searchBox" placeholder="Search unit name..." style="width:160px;padding:4px;">
+        <input type="text" id="searchBox" placeholder="Search unit name...">
     </div>
 
     <!-- 🔐 LOGIN SCREEN -->
@@ -166,8 +415,27 @@
         </div>
     </div>
 
-    <!-- 👤 USER MANAGEMENT PANEL (VISIBLE AFTER LOGIN) -->
-    <div id="userPanel" style="display:none;">
+    <!-- TOP RIGHT BAR -->
+    <div id="topBar">
+        <div id="userInfo" onclick="toggleMenu()">
+            👤 <span id="loggedUser"></span> ☰
+        </div>
+
+        <!-- Dropdown Menu -->
+        <div id="userMenu">
+            <div class="menuItem" onclick="openUserPanel()">User Management</div>
+            <div class="menuItem" onclick="logout()">Logout</div>
+        </div>
+
+        <!-- Google Search -->
+        <div id="googleSearchBox">
+            <input id="pac-input" type="text" placeholder="Search place...">
+            <span id="clearSearch">✖</span>
+        </div>
+    </div>
+
+    <!-- USER MANAGEMENT MODAL -->
+    <div id="userPanelModal">
         <div class="loginBox">
             <h3>User Management</h3>
 
@@ -181,18 +449,12 @@
             <input type="password" id="changePass" placeholder="New Password">
             <button onclick="changePassword()">Change Password</button>
 
-            <button onclick="logout()" style="background:#d32f2f;margin-top:10px;">Logout</button>
-
+            <button onclick="closeUserPanel()" style="background:#999;margin-top:10px;">Close</button>
             <p id="userMsg"></p>
         </div>
     </div>
 
-    <!-- 🔎 GOOGLE PLACE SEARCH (TOP RIGHT AFTER LOGIN) -->
-    <div class="topSearch" id="googleSearchBox" style="display:none;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg">
-        <input id="pac-input" type="text" placeholder="Search place...">
-        <span id="clearSearch">✖</span>
-    </div>
+    <div id="loadingScreen">Loading Map Data...</div>
 
     <!-- 🗺 MAP -->
     <div id="map"></div>
@@ -202,79 +464,90 @@
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBiP3uf8ZRTvrGB6zsce2iVWj1H_IFnMsg&libraries=places"></script>
 
     <script>
-
         // Create default admin
-            if (!localStorage.getItem("users")) {
-                localStorage.setItem("users", JSON.stringify({ "admin": "admin" }));
+        if (!localStorage.getItem("users")) {
+            localStorage.setItem("users", JSON.stringify({ "admin": "admin" }));
+        }
+
+        // Reference elements safely (premium stability)
+        var loginScreenEl = document.getElementById("loginScreen");
+        var topBarEl = document.getElementById("topBar");
+        var googleSearchBoxEl = document.getElementById("googleSearchBox");
+        var loginErrorEl = document.getElementById("loginError");
+        var loggedUserEl = document.getElementById("loggedUser");
+        var userMenuEl = document.getElementById("userMenu");
+        var userPanelModalEl = document.getElementById("userPanelModal");
+        var loadingScreenEl = document.getElementById("loadingScreen");
+
+        // Auto session check
+        if (sessionStorage.getItem("loggedIn") === "true") {
+            loginScreenEl.style.display = "none";
+            topBarEl.style.display = "block";
+            loggedUserEl.innerText = sessionStorage.getItem("currentUser") || "";
+        }
+
+        function login() {
+            var u = document.getElementById("username").value.trim();
+            var p = document.getElementById("password").value.trim();
+            var users = JSON.parse(localStorage.getItem("users"));
+
+            if (users[u] && users[u] === p) {
+                sessionStorage.setItem("loggedIn", "true");
+                sessionStorage.setItem("currentUser", u);
+
+                loginScreenEl.style.display = "none";
+                topBarEl.style.display = "block";
+                loggedUserEl.innerText = u;
+
+                setTimeout(function () {
+                    map.invalidateSize();
+                    loadData();
+                }, 300);
+            } else {
+                loginErrorEl.innerText = "Invalid Username or Password";
+            }
+        }
+
+        function createUser() {
+            var u = document.getElementById("newUser").value.trim();
+            var p = document.getElementById("newPass").value.trim();
+            var users = JSON.parse(localStorage.getItem("users"));
+            var userMsg = document.getElementById("userMsg");
+
+            if (!u || !p) {
+                userMsg.innerText = "Enter username & password";
+                return;
+            }
+            if (users[u]) {
+                userMsg.innerText = "User already exists!";
+                return;
             }
 
-            // Auto session check
-            if (sessionStorage.getItem("loggedIn") === "true") {
-                loginScreen.style.display = "none";
-                googleSearchBox.style.display = "flex";
-                showUserPanel();
+            users[u] = p;
+            localStorage.setItem("users", JSON.stringify(users));
+            userMsg.innerText = "User created successfully!";
+            document.getElementById("newUser").value = "";
+            document.getElementById("newPass").value = "";
+        }
+
+        function changePassword() {
+            var u = document.getElementById("changeUser").value.trim();
+            var p = document.getElementById("changePass").value.trim();
+            var users = JSON.parse(localStorage.getItem("users"));
+            var userMsg = document.getElementById("userMsg");
+
+            if (!users[u]) {
+                userMsg.innerText = "User not found!";
+                return;
             }
 
-            function login() {
-                    var u = username.value.trim();
-                    var p = password.value.trim();
-                    var users = JSON.parse(localStorage.getItem("users"));
+            users[u] = p;
+            localStorage.setItem("users", JSON.stringify(users));
+            userMsg.innerText = "Password changed!";
+            document.getElementById("changeUser").value = "";
+            document.getElementById("changePass").value = "";
+        }
 
-                    if (users[u] && users[u] === p) {
-                        sessionStorage.setItem("loggedIn", "true");
-                        sessionStorage.setItem("currentUser", u);
-                        document.getElementById("loginScreen").style.display = "none";
-                        document.getElementById("googleSearchBox").style.display = "flex";
-                        document.getElementById("userPanel").style.display = "block";
-
-                        setTimeout(function () {
-                            map.invalidateSize();   // 🔥 IMPORTANT
-                            loadData();
-                        }, 300); // 🔥 IMPORTANT
-                    } else {
-                        loginError.innerText = "Invalid Username or Password";
-                    }
-                }
-
-            function showUserPanel() {
-                    document.getElementById("userPanel").style.display = "block";
-                }
-
-                function createUser() {
-                    var u = newUser.value.trim();
-                    var p = newPass.value.trim();
-                    var users = JSON.parse(localStorage.getItem("users"));
-
-                    if (!u || !p) {
-                        userMsg.innerText = "Enter username & password";
-                        return;
-                    }
-                    if (users[u]) {
-                        userMsg.innerText = "User already exists!";
-                        return;
-                    }
-
-                    users[u] = p;
-                    localStorage.setItem("users", JSON.stringify(users));
-                    userMsg.innerText = "User created successfully!";
-                    newUser.value = ""; newPass.value = "";
-                }
-
-                function changePassword() {
-                    var u = changeUser.value.trim();
-                    var p = changePass.value.trim();
-                    var users = JSON.parse(localStorage.getItem("users"));
-
-                    if (!users[u]) {
-                        userMsg.innerText = "User not found!";
-                        return;
-                    }
-
-                    users[u] = p;
-                    localStorage.setItem("users", JSON.stringify(users));
-                    userMsg.innerText = "Password changed!";
-                    changeUser.value = ""; changePass.value = "";
-                }
         var map = L.map('map', { zoomControl: true }).setView([23.5, 87.5], 7);
 
         // 🌍 Map Layer
@@ -282,6 +555,10 @@
             attribution: '© OpenStreetMap',
             maxZoom: 19
         }).addTo(map);
+
+        setTimeout(function () { map.invalidateSize(); }, 500);
+        map.options.zoomAnimation = true;
+        map.options.fadeAnimation = true;
 
         // 🔥 Cluster Group
         var markers = L.markerClusterGroup({
@@ -292,33 +569,33 @@
         map.addLayer(markers);
 
         var input = document.getElementById('pac-input');
-            var searchBox = new google.maps.places.SearchBox(input);
-            var searchMarker;
+        var searchBox = new google.maps.places.SearchBox(input);
+        var searchMarker;
 
-            document.getElementById("clearSearch").onclick = function () {
-                input.value = "";
-                this.style.display = "none";
-                if (searchMarker) map.removeLayer(searchMarker);
-            };
+        document.getElementById("clearSearch").onclick = function () {
+            input.value = "";
+            this.style.display = "none";
+            if (searchMarker) map.removeLayer(searchMarker);
+        };
 
-            var clearBtn = document.getElementById("clearSearch");
+        var clearBtn = document.getElementById("clearSearch");
 
-            input.addEventListener("input", function () {
-                    clearBtn.style.display = this.value ? "block" : "none";
-                });
+        input.addEventListener("input", function () {
+            clearBtn.style.display = this.value ? "block" : "none";
+        });
 
-            searchBox.addListener('places_changed', function () {
-                var places = searchBox.getPlaces();
-                if (!places.length) return;
+        searchBox.addListener('places_changed', function () {
+            var places = searchBox.getPlaces();
+            if (!places.length) return;
 
-                var loc = places[0].geometry.location;
-                var lat = loc.lat();
-                var lng = loc.lng();
+            var loc = places[0].geometry.location;
+            var lat = loc.lat();
+            var lng = loc.lng();
 
-                if (searchMarker) map.removeLayer(searchMarker);
-                searchMarker = L.marker([lat, lng]).addTo(map).bindPopup(places[0].name).openPopup();
-                map.setView([lat, lng], 14);
-            });
+            if (searchMarker) map.removeLayer(searchMarker);
+            searchMarker = L.marker([lat, lng]).addTo(map).bindPopup(places[0].name).openPopup();
+            map.setView([lat, lng], 14);
+        });
 
         // 📡 TSV DATA SOURCE
         var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv";
@@ -351,9 +628,6 @@
                 "AS CHECK": "#e6beff",
                 "COURT": "#42f5e6",
                 "OFFICE": "#c98d8d"
-
-
-
             };
             return colors[hq] || "#000000";
         }
@@ -362,64 +636,115 @@
         function createPremiumIcon(color) {
             return L.divIcon({
                 className: '',
-                html: `<div style="
-            width:18px;height:18px;
-            background:${color};
-            border-radius:50%;
-            border:3px solid white;
-            box-shadow:0 0 6px ${color},0 0 10px ${color},0 0 16px ${color};
-        "></div>`,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
+                html: `
+                    <div style="
+                        width:20px;height:20px;
+                        background:${color};
+                        border-radius:50%;
+                        border:3px solid white;
+                        box-shadow:0 0 8px ${color},0 0 14px ${color},0 0 22px ${color};
+                        animation:pulse 2s infinite;
+                    "></div>`,
+                iconSize: [26, 26],
+                iconAnchor: [13, 13]
             });
         }
 
         var allMarkersData = [];
+        var activeTypes = new Set();
+
+        // 🏷 HQ COLOR LEGEND
+        var legend = L.control({ position: 'bottomright' });
+
+        legend.onAdd = function () {
+            var div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = "<b>Filter Legends</b><br>";
+            div.innerHTML += `<label><input type="checkbox" id="selectAll" checked> Select All</label><br><hr>`;
+
+            const legendItems = {
+                "DG RESERVE": "#e6194b",
+                "L&O DUTY": "#3cb44b",
+                "AG": "#ffe119",
+                "RAF": "#4363d8",
+                "LADY RAF": "#f58231",
+                "STRACO": "#911eb4",
+                "QRT": "#42d4f4",
+                "WINNERS TEAM": "#f032e6",
+                "DMG": "#bfef45",
+                "HQ": "#fabed4",
+                "EF LINES": "#469990",
+                "PS": "#dcbeff",
+                "OP": "#9A6324",
+                "TOP": "#fffac8",
+                "IC": "#800000",
+                "BOP": "#aaffc3",
+                "ROP": "#808000",
+                "BEAT HOUSE": "#ffd8b1",
+                "TG": "#000075",
+                "STG": "#a9a9a9",
+                "CAMP": "#42f572",
+                "HOUSE GUARD": "#968859",
+                "AS CHECK": "#e6beff",
+                "COURT": "#42f5e6",
+                "OFFICE": "#c98d8d"
+            };
+
+            for (let key in legendItems) {
+                activeTypes.add(key);
+                div.innerHTML += `
+                    <label>
+                        <input type="checkbox" class="unitCheck" value="${key}" checked>
+                        <span style="background:${legendItems[key]};width:12px;height:12px;display:inline-block;border-radius:50%;margin-right:6px;"></span>
+                        ${key}
+                    </label><br>`;
+            }
+
+            // Stop map dragging/zoom when using legend
+            L.DomEvent.disableClickPropagation(div);
+            L.DomEvent.disableScrollPropagation(div);
+
+            return div;
+        };
+        legend.addTo(map);
 
         // 🚀 LOAD DATA (FULL SCAN + SAFE SKIP)
         function loadData(selectedType = "ALL", searchText = "") {
-
             markers.clearLayers();
             allMarkersData = [];
+
+            loadingScreenEl.style.display = "flex";
 
             fetch(sheetURL)
                 .then(r => r.text())
                 .then(data => {
-
-                    var rows = data.split("\n"); // don't trim, keep full row count
+                    var rows = data.split("\n");
                     var typesSet = new Set();
                     var bounds = [];
 
-                    var maxRows = Math.min(rows.length, 4000); // scan up to 4000 rows
+                    var maxRows = Math.min(rows.length, 4000);
 
                     for (var i = 1; i < maxRows; i++) {
-
-                        if (!rows[i] || rows[i].trim() === "") continue; // skip blank line
+                        if (!rows[i] || rows[i].trim() === "") continue;
 
                         var cols = rows[i].split("\t");
-                        if (cols.length < 32) continue; // skip incomplete rows
+                        if (cols.length < 32) continue;
 
-                        var type = cols[1]?.trim();      // Column B (MUST exist)
-                        var caption = cols[28]?.trim();  // Column AC
-                        var lat = parseFloat(cols[29]);  // Column AD
-                        var lon = parseFloat(cols[30]);  // Column AE
-                        var hq = cols[31]?.trim() || ""; // Column AF
+                        var type = cols[1] ? cols[1].trim() : "";
+                        var caption = cols[28] ? cols[28].trim() : "";
+                        var lat = parseFloat(cols[29]);
+                        var lon = parseFloat(cols[30]);
+                        var hq = (cols[31] ? cols[31].trim() : "") || "";
 
-                        // 🚫 Skip rows missing required data
                         if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
 
-                        // 🎯 Filters
                         if (activeTypes.size > 0 && !activeTypes.has(type)) continue;
                         if (searchText && !caption.toLowerCase().includes(searchText.toLowerCase())) continue;
 
                         typesSet.add(type);
 
                         var color = getHQColor(hq);
-
-                        // 🔍 CLEAN FULL TEXT
                         var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 
-                        // 🏷 Heading
                         var firstLine = caption.split("\n")[0] || "";
                         var unitName = firstLine
                             .replace(/Actual Strength.*/i, "")
@@ -427,74 +752,72 @@
                             .replace(/Contact No.*/i, "")
                             .trim();
 
-                        // 🟢 Actual Strength
                         var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
                         var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
 
-                        // 🟠 Available Strength
                         var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
                         var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
 
-                        // 📞 Contact
                         var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
                         var contact = contactMatch ? contactMatch[1].trim() : "";
 
                         var marker = L.marker([lat, lon], {
                             icon: createPremiumIcon(color)
                         }).bindPopup(`
-                <div style="
-                    min-width:260px;
-                    font-family:'Segoe UI';
-                    border-radius:12px;
-                    overflow:hidden;
-                    box-shadow:0 6px 18px rgba(0,0,0,0.25);
-                    background:white;
-                ">
+                            <div style="
+                                min-width:260px;
+                                font-family:'Segoe UI';
+                                border-radius:16px;
+                                overflow:hidden;
+                                background:white;
+                                box-shadow:0 14px 34px rgba(0,0,0,0.28);
+                            ">
+                                <div style="
+                                    background:linear-gradient(135deg,#0d47a1,#1976d2);
+                                    color:white;
+                                    padding:12px 14px;
+                                    font-weight:800;
+                                    font-size:15px;
+                                    letter-spacing:.2px;">
+                                    ${unitName}
+                                </div>
 
-                    <div style="
-                        background:linear-gradient(135deg,#0d47a1,#1976d2);
-                        color:white;
-                        padding:10px 12px;
-                        font-weight:700;
-                        font-size:14px;">
-                        ${unitName}
-                    </div>
+                                ${actualStrength ? `
+                                <div style="padding:10px 14px;background:#e3f2fd;color:#0d47a1;font-size:13px;">
+                                    <b>Actual Strength</b><br>${actualStrength}
+                                </div>` : ""}
 
-                    ${actualStrength ? `
-                    <div style="padding:10px 12px;background:#e8f5e9;color:#1b5e20;font-size:13px;">
-                        <b>Actual Strength</b><br>${actualStrength}
-                    </div>` : ""}
+                                ${availableStrength ? `
+                                <div style="padding:10px 14px;background:#fff3e0;color:#e65100;font-size:13px;">
+                                    <b>Available Strength</b><br>${availableStrength}
+                                </div>` : ""}
 
-                    ${availableStrength ? `
-                    <div style="padding:10px 12px;background:#fff3e0;color:#e65100;font-size:13px;">
-                        <b>Available Strength</b><br>${availableStrength}
-                    </div>` : ""}
+                                ${contact ? `
+                                <div style="padding:10px 14px;background:#f3e5f5;color:#4a148c;font-size:13px;">
+                                    📞 <b>${contact}</b>
+                                </div>` : ""}
 
-                    ${contact ? `
-                    <div style="padding:10px 12px;background:#f3e5f5;color:#4a148c;font-size:13px;">
-                        📞 <b>${contact}</b>
-                    </div>` : ""}
-
-                    <div style="padding:10px 12px;text-align:right;">
-                        <span style="
-                            background:linear-gradient(135deg,#3949ab,#1e88e5);
-                            color:white;
-                            padding:4px 10px;
-                            border-radius:12px;
-                            font-size:11px;
-                            font-weight:600;">
-                            ${type}
-                        </span>
-                    </div>
-
-                </div>
-            `);
+                                <div style="padding:10px 14px;text-align:right;">
+                                    <span style="
+                                        background:linear-gradient(135deg,#3949ab,#1e88e5);
+                                        color:white;
+                                        padding:5px 12px;
+                                        border-radius:14px;
+                                        font-size:11px;
+                                        font-weight:800;
+                                        letter-spacing:.2px;">
+                                        ${type}
+                                    </span>
+                                </div>
+                            </div>
+                        `);
 
                         markers.addLayer(marker);
                         allMarkersData.push(marker);
                         bounds.push([lat, lon]);
                     }
 
+                    // Fill dropdown once
                     var filter = document.getElementById("typeFilter");
                     if (filter.options.length <= 1) {
                         typesSet.forEach(t => {
@@ -509,10 +832,12 @@
                         map.fitBounds(bounds, { padding: [30, 30] });
                     }
 
+                    loadingScreenEl.style.display = "none";
+                })
+                .catch(function () {
+                    loadingScreenEl.style.display = "none";
                 });
         }
-
-
 
         // 🎛 Type Filter
         document.getElementById("typeFilter").addEventListener("change", function () {
@@ -524,107 +849,62 @@
             loadData(document.getElementById("typeFilter").value, this.value);
         });
 
+        // Legend checkbox handling
+        document.addEventListener("change", function (e) {
+            if (e.target && e.target.id === "selectAll") {
+                var checked = e.target.checked;
+                document.querySelectorAll(".unitCheck").forEach(function (cb) {
+                    cb.checked = checked;
+                    if (checked) activeTypes.add(cb.value);
+                    else activeTypes.delete(cb.value);
+                });
+                loadData();
+            }
+
+            if (e.target && e.target.classList && e.target.classList.contains("unitCheck")) {
+                if (e.target.checked) activeTypes.add(e.target.value);
+                else activeTypes.delete(e.target.value);
+                loadData();
+            }
+        });
+
+        function logout() {
+            sessionStorage.clear();
+            userMenuEl.style.display = "none";
+            topBarEl.style.display = "none";
+            loginScreenEl.style.display = "flex";
+            loginErrorEl.innerText = "";
+            setTimeout(function () { map.invalidateSize(); }, 300);
+        }
+
+        function toggleMenu() {
+            userMenuEl.style.display = userMenuEl.style.display === "block" ? "none" : "block";
+        }
+
+        function openUserPanel() {
+            userPanelModalEl.style.display = "flex";
+            userMenuEl.style.display = "none";
+        }
+
+        function closeUserPanel() {
+            userPanelModalEl.style.display = "none";
+        }
+
+        // Start data loading if already logged in
+        if (sessionStorage.getItem("loggedIn") === "true") {
+            setTimeout(function () {
+                map.invalidateSize();
+                loadData();
+            }, 300);
+        }
+
         // 🔁 AUTO REFRESH
         setInterval(function () {
-            loadData(document.getElementById("typeFilter").value, document.getElementById("searchBox").value);
+            if (sessionStorage.getItem("loggedIn") === "true") {
+                loadData(document.getElementById("typeFilter").value, document.getElementById("searchBox").value);
+            }
         }, 600000);
-
-        // 🏷 HQ COLOR LEGEND
-        var legend = L.control({ position: 'bottomright' });
-        var activeTypes = new Set();
-
-            legend.onAdd = function () {
-                var div = L.DomUtil.create('div', 'legend');
-                div.innerHTML = "<b>Filter Legends</b><br>";
-
-                div.innerHTML += `<label><input type="checkbox" id="selectAll" checked> Select All</label><br><hr>`;
-
-                const legendItems = {
-                    "DG RESERVE": "#e6194b",
-                    "L&O DUTY": "#3cb44b",
-                    "AG": "#ffe119",
-                    "RAF": "#4363d8",
-                    "LADY RAF": "#f58231",
-                    "STRACO": "#911eb4",
-                    "QRT": "#42d4f4",
-                    "WINNERS TEAM": "#f032e6",
-                    "DMG": "#bfef45",
-                    "HQ": "#fabed4",
-                    "EF LINES": "#469990",
-                    "PS": "#dcbeff",
-                    "OP": "#9A6324",
-                    "TOP": "#fffac8",
-                    "IC": "#800000",
-                    "BOP": "#aaffc3",
-                    "ROP": "#808000",
-                    "BEAT HOUSE": "#ffd8b1",
-                    "TG": "#000075",
-                    "STG": "#a9a9a9",
-                    "CAMP": "#42f572",
-                    "HOUSE GUARD": "#968859",
-                    "AS CHECK": "#e6beff",
-                    "COURT": "#42f5e6",
-                    "OFFICE": "#c98d8d"
-                };
-
-                for (let key in legendItems) {
-                    activeTypes.add(key);
-                    div.innerHTML += `
-        <label>
-            <input type="checkbox" class="unitCheck" value="${key}" checked>
-            <span style="background:${legendItems[key]};width:12px;height:12px;display:inline-block;border-radius:50%;margin-right:6px;"></span>
-            ${key}
-        </label><br>`;
-                }
-
-                return div;
-            };
-        legend.addTo(map);
-
-
-
-        document.addEventListener("change", function (e) {
-
-                if (e.target.id === "selectAll") {
-                    var checked = e.target.checked;
-                    document.querySelectorAll(".unitCheck").forEach(cb => {
-                        cb.checked = checked;
-                        if (checked) activeTypes.add(cb.value);
-                        else activeTypes.delete(cb.value);
-                    });
-                    loadData();
-                }
-
-                if (e.target.classList.contains("unitCheck")) {
-                    if (e.target.checked) activeTypes.add(e.target.value);
-                    else activeTypes.delete(e.target.value);
-                    loadData();
-                }
-            });
-
-            function logout() {
-                    sessionStorage.clear();
-                    document.getElementById("googleSearchBox").style.display = "none";
-                    document.getElementById("userPanel").style.display = "none";
-                    document.getElementById("loginScreen").style.display = "flex";
-
-                    setTimeout(function () {
-                        map.invalidateSize();
-                    }, 300);
-                }
-
-                if (sessionStorage.getItem("loggedIn") === "true") {
-                        document.getElementById("loginScreen").style.display = "none";
-                        document.getElementById("googleSearchBox").style.display = "flex";
-                        document.getElementById("userPanel").style.display = "block";
-
-                        setTimeout(function () {
-                            map.invalidateSize();   // 🔥 IMPORTANT
-                            loadData();
-                        }, 300);
-                    }
     </script>
-
 
 </body>
 
