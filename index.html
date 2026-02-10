@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>WB Police Force Details</title>
 
+    <!-- Leaflet + Cluster CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
@@ -15,11 +16,13 @@
             --brand1: #0d47a1;
             --brand2: #1976d2;
             --brand3: #1e88e5;
-            --glass: rgba(255, 255, 255, 0.86);
-            --glassBorder: rgba(255, 255, 255, 0.35);
-            --shadow1: 0 10px 30px rgba(0, 0, 0, 0.25);
-            --shadow2: 0 6px 18px rgba(0, 0, 0, 0.20);
+            --glass: rgba(255, 255, 255, 0.88);
+            --glassBorder: rgba(255, 255, 255, 0.38);
+            --shadow1: 0 18px 45px rgba(0, 0, 0, 0.32);
+            --shadow2: 0 10px 28px rgba(0, 0, 0, 0.20);
+            --shadow3: 0 6px 18px rgba(0, 0, 0, 0.16);
             --radiusXL: 22px;
+            --radiusL: 16px;
             --radiusPill: 999px;
         }
 
@@ -33,14 +36,17 @@
             background: #f4f6f9;
         }
 
+        /* MAP */
         #map {
             height: 100vh;
+            width: 100vw;
             filter: saturate(1.05) contrast(1.05);
             z-index: 1;
         }
 
+        /* HEADER */
         .header {
-            position: absolute;
+            position: fixed;
             top: 15px;
             left: 50%;
             transform: translateX(-50%);
@@ -48,33 +54,36 @@
             color: white;
             padding: 12px 30px;
             border-radius: 40px;
-            font-weight: 800;
+            font-weight: 900;
             letter-spacing: .6px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
-            z-index: 3000;
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
+            z-index: 3500;
             user-select: none;
+            display: none;
         }
 
-        /* Premium glass cards */
+        /* GLASS PANELS */
         .legend,
         .filterBox,
         #googleSearchBox,
         #userMenu {
-            position: absolute;
+            position: fixed;
             background: var(--glass);
             border: 1px solid var(--glassBorder);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             border-radius: 14px;
-            box-shadow: var(--shadow2);
-            z-index: 2000;
+            box-shadow: var(--shadow3);
+            z-index: 3000;
         }
 
+        /* FILTER BOX */
         .filterBox {
             top: 85px;
             left: 20px;
             padding: 14px 14px 12px 14px;
-            min-width: 215px;
+            min-width: 260px;
+            display: none;
         }
 
         .filterBox b {
@@ -91,9 +100,9 @@
             border-radius: 12px;
             border: 1px solid rgba(13, 71, 161, 0.18);
             outline: none;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.92);
             font-family: 'Segoe UI', sans-serif;
-            font-weight: 600;
+            font-weight: 700;
             color: #0d47a1;
         }
 
@@ -103,22 +112,46 @@
             border-radius: 12px;
             border: 1px solid rgba(13, 71, 161, 0.18);
             outline: none;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.92);
             font-family: 'Segoe UI', sans-serif;
         }
 
+        #typeFilter:focus,
+        #searchBox:focus {
+            border-color: rgba(30, 136, 229, 0.65);
+            box-shadow: 0 0 0 4px rgba(30, 136, 229, 0.16);
+        }
+
+        /* LEGEND (WIDE + PREMIUM + NO PAGE SCROLL NEEDED) */
         .legend {
             bottom: 20px;
             right: 20px;
             padding: 14px 14px 12px 14px;
-            font-size: 13px;
-            max-height: 52vh;
-            overflow: auto;
+            width: 560px;
+            max-width: calc(100vw - 40px);
+            display: none;
+            overflow: hidden;
         }
 
-        .legend b {
+        .legendHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .legendHeader b {
             color: #0b2f6f;
             letter-spacing: .2px;
+            font-size: 13px;
+        }
+
+        .legendHeader .smallNote {
+            font-size: 12px;
+            opacity: .75;
+            color: #0b2f6f;
+            font-weight: 600;
         }
 
         .legend hr {
@@ -127,32 +160,48 @@
             margin: 10px 0;
         }
 
-        .legend label {
+        /* Grid layout to avoid scrolling down */
+        .legendGrid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 12px;
+            align-items: start;
+        }
+
+        .legendRow {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 5px 2px;
-            cursor: pointer;
+            padding: 6px 6px;
+            border-radius: 12px;
+            transition: .18s;
             user-select: none;
         }
 
-        .legend input[type="checkbox"] {
+        .legendRow:hover {
+            background: linear-gradient(90deg, rgba(227, 242, 253, 0.85), rgba(187, 222, 251, 0.75));
+        }
+
+        .legendRow input[type="checkbox"] {
             transform: scale(1.05);
             cursor: pointer;
         }
 
-        .legend::-webkit-scrollbar {
-            width: 8px;
+        .legendDot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 2px solid rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
         }
 
-        .legend::-webkit-scrollbar-thumb {
-            background: rgba(13, 71, 161, 0.22);
-            border-radius: 999px;
-        }
-
-        .legend::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.04);
-            border-radius: 999px;
+        .legendText {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #0b2f6f;
+            letter-spacing: .15px;
+            line-height: 1.15;
         }
 
         /* LOGIN SCREEN */
@@ -164,16 +213,16 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 7000;
+            z-index: 8000;
         }
 
         .loginBox {
             background: rgba(255, 255, 255, 0.96);
             padding: 38px 34px;
             border-radius: var(--radiusXL);
-            width: 340px;
+            width: 360px;
             text-align: center;
-            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+            box-shadow: var(--shadow1);
             border: 1px solid rgba(255, 255, 255, 0.35);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -183,6 +232,14 @@
             margin: 0 0 12px 0;
             color: #0b2f6f;
             letter-spacing: .4px;
+            font-weight: 900;
+        }
+
+        .loginBox .hint {
+            margin: 0 0 12px 0;
+            font-size: 12.5px;
+            color: rgba(11, 47, 111, 0.80);
+            font-weight: 650;
         }
 
         .loginBox input {
@@ -208,16 +265,16 @@
             color: white;
             border: none;
             border-radius: 14px;
-            font-weight: 800;
+            font-weight: 900;
             letter-spacing: .2px;
             cursor: pointer;
-            box-shadow: 0 10px 22px rgba(25, 118, 210, 0.25);
+            box-shadow: 0 12px 24px rgba(25, 118, 210, 0.25);
             transition: transform .14s ease, box-shadow .14s ease;
         }
 
         .loginBox button:hover {
             transform: translateY(-1px);
-            box-shadow: 0 14px 28px rgba(25, 118, 210, 0.35);
+            box-shadow: 0 16px 30px rgba(25, 118, 210, 0.35);
         }
 
         .loginBox button:active {
@@ -229,6 +286,7 @@
             font-size: 13px;
             margin: 10px 0 0 0;
             min-height: 16px;
+            font-weight: 700;
         }
 
         /* TOP BAR */
@@ -236,7 +294,7 @@
             position: fixed;
             top: 15px;
             right: 20px;
-            z-index: 3500;
+            z-index: 3600;
             font-family: 'Segoe UI';
             display: none;
         }
@@ -247,15 +305,15 @@
             padding: 10px 16px;
             border-radius: 30px;
             cursor: pointer;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.30);
-            font-weight: 700;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.26);
+            font-weight: 900;
             transition: transform .18s ease, box-shadow .18s ease;
             user-select: none;
         }
 
         #userInfo:hover {
             transform: scale(1.05);
-            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.32);
+            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
         }
 
         #userMenu {
@@ -264,15 +322,16 @@
             margin-top: 10px;
             border-radius: 14px;
             overflow: hidden;
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
         }
 
         .menuItem {
             padding: 12px 16px;
             cursor: pointer;
-            font-weight: 650;
+            font-weight: 800;
             transition: .2s;
             white-space: nowrap;
+            color: #0b2f6f;
         }
 
         .menuItem:hover {
@@ -285,8 +344,8 @@
             margin-top: 12px;
             padding: 8px 14px;
             border-radius: 30px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-            display: flex;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.20);
+            display: none;
             align-items: center;
             gap: 10px;
         }
@@ -294,10 +353,12 @@
         #googleSearchBox input {
             border: none;
             outline: none;
-            width: 200px;
+            width: 220px;
             font-size: 14px;
             background: transparent;
             font-family: 'Segoe UI', sans-serif;
+            font-weight: 650;
+            color: #0b2f6f;
         }
 
         #clearSearch {
@@ -308,6 +369,7 @@
             font-weight: 900;
             opacity: .75;
             transition: .2s;
+            color: #0b2f6f;
         }
 
         #clearSearch:hover {
@@ -326,12 +388,13 @@
             background: rgba(0, 0, 0, 0.45);
             justify-content: center;
             align-items: center;
-            z-index: 6500;
+            z-index: 7500;
         }
 
         #userPanelModal .loginBox h3 {
             margin: 0 0 12px 0;
             color: #0b2f6f;
+            font-weight: 900;
         }
 
         #userPanelModal .loginBox hr {
@@ -340,9 +403,10 @@
             margin: 14px 0;
         }
 
-        #userPanelModal .loginBox button[style*="background:#999"] {
-            background: linear-gradient(135deg, #8e8e8e, #b0b0b0) !important;
+        #userPanelModal .loginBox button.closeBtn {
+            background: linear-gradient(135deg, #8e8e8e, #b0b0b0);
             box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+            margin-top: 10px;
         }
 
         #userMsg {
@@ -350,33 +414,44 @@
             font-size: 13px;
             min-height: 16px;
             color: #0b2f6f;
+            font-weight: 800;
         }
 
         @keyframes pulse {
-            0% { box-shadow: 0 0 6px rgba(0, 0, 0, 0.35); }
-            50% { box-shadow: 0 0 18px rgba(0, 0, 0, 0.75); }
-            100% { box-shadow: 0 0 6px rgba(0, 0, 0, 0.35); }
+            0% {
+                box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
+            }
+
+            50% {
+                box-shadow: 0 0 18px rgba(0, 0, 0, 0.75);
+            }
+
+            100% {
+                box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
+            }
         }
 
+        /* LOADING OVERLAY (MAP DATA LOADING) */
         #loadingScreen {
             position: fixed;
             width: 100%;
             height: 100%;
             background: linear-gradient(135deg, var(--brand1), var(--brand2));
             color: white;
-            display: flex;
+            display: none;
             justify-content: center;
             align-items: center;
             font-size: 22px;
-            font-weight: 800;
+            font-weight: 900;
             letter-spacing: .3px;
-            z-index: 8000;
+            z-index: 7000;
+            user-select: none;
         }
 
         /* Leaflet popup polish */
         .leaflet-popup-content-wrapper {
             border-radius: 16px !important;
-            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.30) !important;
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.30) !important;
             overflow: hidden;
         }
 
@@ -386,16 +461,35 @@
 
         .leaflet-control-zoom a {
             border-radius: 10px !important;
-            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18) !important;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16) !important;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 740px) {
+            .legend {
+                width: calc(100vw - 40px);
+            }
+
+            .legendGrid {
+                grid-template-columns: 1fr;
+            }
+
+            .filterBox {
+                min-width: calc(100vw - 40px);
+            }
+
+            #googleSearchBox input {
+                width: 170px;
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <div class="header">WB Police Force Details</div>
+    <div class="header" id="pageHeader">WB Police Force Details</div>
 
-    <div class="filterBox">
+    <div class="filterBox" id="filterBox">
         <b>Filter by Unit Type</b><br>
         <select id="typeFilter">
             <option value="ALL">All Units</option>
@@ -404,13 +498,14 @@
         <input type="text" id="searchBox" placeholder="Search unit name...">
     </div>
 
-    <!-- 🔐 LOGIN SCREEN -->
+    <!-- 🔐 LOGIN SCREEN (FIRST PAGE) -->
     <div id="loginScreen">
         <div class="loginBox">
             <h2>WB Police Force Details</h2>
-            <input type="text" id="username" placeholder="Username">
-            <input type="password" id="password" placeholder="Password">
-            <button onclick="login()">Login</button>
+            <p class="hint">Default Login: <b>admin</b> / <b>admin</b></p>
+            <input type="text" id="username" placeholder="Username" value="admin" autocomplete="username">
+            <input type="password" id="password" placeholder="Password" value="admin" autocomplete="current-password">
+            <button id="loginBtn" onclick="login()">Login</button>
             <p id="loginError"></p>
         </div>
     </div>
@@ -421,13 +516,11 @@
             👤 <span id="loggedUser"></span> ☰
         </div>
 
-        <!-- Dropdown Menu -->
         <div id="userMenu">
             <div class="menuItem" onclick="openUserPanel()">User Management</div>
             <div class="menuItem" onclick="logout()">Logout</div>
         </div>
 
-        <!-- Google Search -->
         <div id="googleSearchBox">
             <input id="pac-input" type="text" placeholder="Search place...">
             <span id="clearSearch">✖</span>
@@ -449,158 +542,79 @@
             <input type="password" id="changePass" placeholder="New Password">
             <button onclick="changePassword()">Change Password</button>
 
-            <button onclick="closeUserPanel()" style="background:#999;margin-top:10px;">Close</button>
+            <button class="closeBtn" onclick="closeUserPanel()">Close</button>
             <p id="userMsg"></p>
         </div>
     </div>
 
+    <!-- LOADING SCREEN -->
     <div id="loadingScreen">Loading Map Data...</div>
 
     <!-- 🗺 MAP -->
     <div id="map"></div>
 
+    <!-- Leaflet + Cluster JS (lightweight) -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBiP3uf8ZRTvrGB6zsce2iVWj1H_IFnMsg&libraries=places"></script>
 
     <script>
-        // Create default admin
-        if (!localStorage.getItem("users")) {
-            localStorage.setItem("users", JSON.stringify({ "admin": "admin" }));
-        }
+        /********************************************************************
+         * PERFORMANCE / SMOOTH OPENING:
+         * 1) Website opens FAST: only login screen shown first.
+         * 2) Map + data + Google Places load ONLY AFTER successful login.
+         * 3) TSV is fetched ONCE and cached; filters run in-memory (FAST).
+         * 4) Debounce filters to keep smooth UI.
+         ********************************************************************/
 
-        // Reference elements safely (premium stability)
+        // ---------- CONFIG ----------
+        var GOOGLE_PLACES_API_KEY = "AIzaSyBiP3uf8ZRTvrGB6zsce2iVWj1H_IFnMsg";
+
+        // TSV SOURCE
+        var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv";
+
+        // ---------- ELEMENTS ----------
         var loginScreenEl = document.getElementById("loginScreen");
+        var loginErrorEl = document.getElementById("loginError");
+        var pageHeaderEl = document.getElementById("pageHeader");
         var topBarEl = document.getElementById("topBar");
         var googleSearchBoxEl = document.getElementById("googleSearchBox");
-        var loginErrorEl = document.getElementById("loginError");
+        var filterBoxEl = document.getElementById("filterBox");
         var loggedUserEl = document.getElementById("loggedUser");
         var userMenuEl = document.getElementById("userMenu");
         var userPanelModalEl = document.getElementById("userPanelModal");
         var loadingScreenEl = document.getElementById("loadingScreen");
 
-        // Auto session check
-        if (sessionStorage.getItem("loggedIn") === "true") {
-            loginScreenEl.style.display = "none";
-            topBarEl.style.display = "block";
-            loggedUserEl.innerText = sessionStorage.getItem("currentUser") || "";
-        }
+        var typeFilterEl = document.getElementById("typeFilter");
+        var searchBoxEl = document.getElementById("searchBox");
 
-        function login() {
-            var u = document.getElementById("username").value.trim();
-            var p = document.getElementById("password").value.trim();
-            var users = JSON.parse(localStorage.getItem("users"));
-
-            if (users[u] && users[u] === p) {
-                sessionStorage.setItem("loggedIn", "true");
-                sessionStorage.setItem("currentUser", u);
-
-                loginScreenEl.style.display = "none";
-                topBarEl.style.display = "block";
-                loggedUserEl.innerText = u;
-
-                setTimeout(function () {
-                    map.invalidateSize();
-                    loadData();
-                }, 300);
-            } else {
-                loginErrorEl.innerText = "Invalid Username or Password";
+        // ---------- DEFAULT USERS ----------
+        // Default: admin/admin (always first)
+        if (!localStorage.getItem("users")) {
+            localStorage.setItem("users", JSON.stringify({ "admin": "admin" }));
+        } else {
+            // Ensure admin exists even if storage got changed accidentally
+            var _usersEnsure = JSON.parse(localStorage.getItem("users"));
+            if (!_usersEnsure["admin"]) {
+                _usersEnsure["admin"] = "admin";
+                localStorage.setItem("users", JSON.stringify(_usersEnsure));
             }
         }
 
-        function createUser() {
-            var u = document.getElementById("newUser").value.trim();
-            var p = document.getElementById("newPass").value.trim();
-            var users = JSON.parse(localStorage.getItem("users"));
-            var userMsg = document.getElementById("userMsg");
+        // ---------- MAP VARIABLES (init after login) ----------
+        var map = null;
+        var markers = null;
+        var searchMarker = null;
 
-            if (!u || !p) {
-                userMsg.innerText = "Enter username & password";
-                return;
-            }
-            if (users[u]) {
-                userMsg.innerText = "User already exists!";
-                return;
-            }
+        // Cached data for smooth filtering
+        var cachedRows = [];              // array of parsed items
+        var cachedTypes = new Set();      // types for dropdown
+        var activeTypes = new Set();      // legend checkboxes selection
+        var isDataLoadedOnce = false;
 
-            users[u] = p;
-            localStorage.setItem("users", JSON.stringify(users));
-            userMsg.innerText = "User created successfully!";
-            document.getElementById("newUser").value = "";
-            document.getElementById("newPass").value = "";
-        }
+        // Google Places loaded flag
+        var googlePlacesLoaded = false;
 
-        function changePassword() {
-            var u = document.getElementById("changeUser").value.trim();
-            var p = document.getElementById("changePass").value.trim();
-            var users = JSON.parse(localStorage.getItem("users"));
-            var userMsg = document.getElementById("userMsg");
-
-            if (!users[u]) {
-                userMsg.innerText = "User not found!";
-                return;
-            }
-
-            users[u] = p;
-            localStorage.setItem("users", JSON.stringify(users));
-            userMsg.innerText = "Password changed!";
-            document.getElementById("changeUser").value = "";
-            document.getElementById("changePass").value = "";
-        }
-
-        var map = L.map('map', { zoomControl: true }).setView([23.5, 87.5], 7);
-
-        // 🌍 Map Layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap',
-            maxZoom: 19
-        }).addTo(map);
-
-        setTimeout(function () { map.invalidateSize(); }, 500);
-        map.options.zoomAnimation = true;
-        map.options.fadeAnimation = true;
-
-        // 🔥 Cluster Group
-        var markers = L.markerClusterGroup({
-            disableClusteringAtZoom: 13,
-            spiderfyOnMaxZoom: true,
-            showCoverageOnHover: false
-        });
-        map.addLayer(markers);
-
-        var input = document.getElementById('pac-input');
-        var searchBox = new google.maps.places.SearchBox(input);
-        var searchMarker;
-
-        document.getElementById("clearSearch").onclick = function () {
-            input.value = "";
-            this.style.display = "none";
-            if (searchMarker) map.removeLayer(searchMarker);
-        };
-
-        var clearBtn = document.getElementById("clearSearch");
-
-        input.addEventListener("input", function () {
-            clearBtn.style.display = this.value ? "block" : "none";
-        });
-
-        searchBox.addListener('places_changed', function () {
-            var places = searchBox.getPlaces();
-            if (!places.length) return;
-
-            var loc = places[0].geometry.location;
-            var lat = loc.lat();
-            var lng = loc.lng();
-
-            if (searchMarker) map.removeLayer(searchMarker);
-            searchMarker = L.marker([lat, lng]).addTo(map).bindPopup(places[0].name).openPopup();
-            map.setView([lat, lng], 14);
-        });
-
-        // 📡 TSV DATA SOURCE
-        var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv";
-
-        // 🎨 HQ COLOR MAP
+        // ---------- COLORS ----------
         function getHQColor(hq) {
             const colors = {
                 "DG RESERVE": "#e6194b",
@@ -650,18 +664,44 @@
             });
         }
 
-        var allMarkersData = [];
-        var activeTypes = new Set();
+        // ---------- LEGEND (WIDE + GRID, NO PAGE SCROLL) ----------
+        var legendControl = null;
 
-        // 🏷 HQ COLOR LEGEND
-        var legend = L.control({ position: 'bottomright' });
+        function buildLegend() {
+            if (!map) return;
 
-        legend.onAdd = function () {
-            var div = L.DomUtil.create('div', 'legend');
-            div.innerHTML = "<b>Filter Legends</b><br>";
-            div.innerHTML += `<label><input type="checkbox" id="selectAll" checked> Select All</label><br><hr>`;
+            if (legendControl) {
+                try { map.removeControl(legendControl); } catch (e) { }
+                legendControl = null;
+            }
 
-            const legendItems = {
+            legendControl = L.control({ position: 'bottomright' });
+            legendControl.onAdd = function () {
+                var div = L.DomUtil.create('div', 'legend');
+                div.innerHTML = `
+                    <div class="legendHeader">
+                        <b>Filter Legends</b>
+                        <span class="smallNote">Wide View (No Page Scroll)</span>
+                    </div>
+                    <div class="legendRow" style="padding:8px 6px;">
+                        <input type="checkbox" id="selectAll" checked>
+                        <span class="legendText">Select All</span>
+                    </div>
+                    <hr>
+                    <div class="legendGrid" id="legendGrid"></div>
+                `;
+
+                // Prevent legend clicks from moving the map
+                L.DomEvent.disableClickPropagation(div);
+                L.DomEvent.disableScrollPropagation(div);
+
+                return div;
+            };
+
+            legendControl.addTo(map);
+
+            // Build legend items inside grid
+            var legendItems = {
                 "DG RESERVE": "#e6194b",
                 "L&O DUTY": "#3cb44b",
                 "AG": "#ffe119",
@@ -689,192 +729,481 @@
                 "OFFICE": "#c98d8d"
             };
 
-            for (let key in legendItems) {
-                activeTypes.add(key);
-                div.innerHTML += `
-                    <label>
-                        <input type="checkbox" class="unitCheck" value="${key}" checked>
-                        <span style="background:${legendItems[key]};width:12px;height:12px;display:inline-block;border-radius:50%;margin-right:6px;"></span>
-                        ${key}
-                    </label><br>`;
+            // Default select all
+            activeTypes.clear();
+            for (var key in legendItems) activeTypes.add(key);
+
+            // Render
+            setTimeout(function () {
+                var grid = document.getElementById("legendGrid");
+                if (!grid) return;
+                grid.innerHTML = "";
+
+                for (var k in legendItems) {
+                    var row = document.createElement("div");
+                    row.className = "legendRow";
+                    row.innerHTML = `
+                        <input type="checkbox" class="unitCheck" value="${k}" checked>
+                        <span class="legendDot" style="background:${legendItems[k]};"></span>
+                        <span class="legendText">${k}</span>
+                    `;
+                    grid.appendChild(row);
+                }
+
+                // Show legend now
+                var legendDiv = document.querySelector(".legend");
+                if (legendDiv) legendDiv.style.display = "block";
+            }, 0);
+        }
+
+        // ---------- DATA PARSING (ONE TIME) ----------
+        function parseTSVToCache(tsvText) {
+            cachedRows = [];
+            cachedTypes.clear();
+
+            var rows = tsvText.split("\n");
+            var maxRows = Math.min(rows.length, 4000);
+
+            for (var i = 1; i < maxRows; i++) {
+                if (!rows[i] || rows[i].trim() === "") continue;
+
+                var cols = rows[i].split("\t");
+                if (cols.length < 32) continue;
+
+                var type = cols[1] ? cols[1].trim() : "";
+                var caption = cols[28] ? cols[28].trim() : "";
+                var lat = parseFloat(cols[29]);
+                var lon = parseFloat(cols[30]);
+                var hq = (cols[31] ? cols[31].trim() : "") || "";
+
+                if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
+
+                cachedTypes.add(type);
+
+                // Clean full text
+                var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+
+                // Unit name from first line
+                var firstLine = caption.split("\n")[0] || "";
+                var unitName = firstLine
+                    .replace(/Actual Strength.*/i, "")
+                    .replace(/AVAILABLE STRENGTH.*/i, "")
+                    .replace(/Contact No.*/i, "")
+                    .trim();
+
+                var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
+                var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
+
+                var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
+                var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
+
+                var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
+                var contact = contactMatch ? contactMatch[1].trim() : "";
+
+                cachedRows.push({
+                    type: type,
+                    caption: caption,
+                    lat: lat,
+                    lon: lon,
+                    hq: hq,
+                    unitName: unitName,
+                    actualStrength: actualStrength,
+                    availableStrength: availableStrength,
+                    contact: contact
+                });
+            }
+        }
+
+        // ---------- UI HELPERS ----------
+        function showLoading(show) {
+            loadingScreenEl.style.display = show ? "flex" : "none";
+        }
+
+        function fillTypeDropdownOnce() {
+            // Fill dropdown only if not filled
+            if (typeFilterEl.options.length > 1) return;
+
+            var arr = Array.from(cachedTypes);
+            arr.sort(function (a, b) { return a.localeCompare(b); });
+
+            for (var i = 0; i < arr.length; i++) {
+                var opt = document.createElement("option");
+                opt.value = arr[i];
+                opt.text = arr[i];
+                typeFilterEl.appendChild(opt);
+            }
+        }
+
+        // ---------- RENDER MARKERS (FAST FILTERING IN MEMORY) ----------
+        function renderMarkersFromCache() {
+            if (!map || !markers) return;
+
+            markers.clearLayers();
+
+            var selectedType = typeFilterEl.value || "ALL";
+            var searchText = (searchBoxEl.value || "").trim().toLowerCase();
+
+            var bounds = [];
+
+            for (var i = 0; i < cachedRows.length; i++) {
+                var item = cachedRows[i];
+
+                // Apply legend filter (HQ legend selection)
+                if (activeTypes.size > 0 && !activeTypes.has(item.type)) continue;
+
+                // Apply dropdown filter (Unit Type)
+                if (selectedType !== "ALL" && item.type !== selectedType) continue;
+
+                // Apply text search
+                if (searchText && item.caption.toLowerCase().indexOf(searchText) === -1) continue;
+
+                var color = getHQColor(item.hq);
+
+                var marker = L.marker([item.lat, item.lon], {
+                    icon: createPremiumIcon(color)
+                }).bindPopup(`
+                    <div style="
+                        min-width:260px;
+                        font-family:'Segoe UI';
+                        border-radius:16px;
+                        overflow:hidden;
+                        background:white;
+                        box-shadow:0 14px 34px rgba(0,0,0,0.28);
+                    ">
+                        <div style="
+                            background:linear-gradient(135deg,#0d47a1,#1976d2);
+                            color:white;
+                            padding:12px 14px;
+                            font-weight:900;
+                            font-size:15px;
+                            letter-spacing:.2px;">
+                            ${item.unitName}
+                        </div>
+
+                        ${item.actualStrength ? `
+                        <div style="padding:10px 14px;background:#e3f2fd;color:#0d47a1;font-size:13px;">
+                            <b>Actual Strength</b><br>${item.actualStrength}
+                        </div>` : ""}
+
+                        ${item.availableStrength ? `
+                        <div style="padding:10px 14px;background:#fff3e0;color:#e65100;font-size:13px;">
+                            <b>Available Strength</b><br>${item.availableStrength}
+                        </div>` : ""}
+
+                        ${item.contact ? `
+                        <div style="padding:10px 14px;background:#f3e5f5;color:#4a148c;font-size:13px;">
+                            📞 <b>${item.contact}</b>
+                        </div>` : ""}
+
+                        <div style="padding:10px 14px;text-align:right;">
+                            <span style="
+                                background:linear-gradient(135deg,#3949ab,#1e88e5);
+                                color:white;
+                                padding:5px 12px;
+                                border-radius:14px;
+                                font-size:11px;
+                                font-weight:900;
+                                letter-spacing:.2px;">
+                                ${item.type}
+                            </span>
+                        </div>
+                    </div>
+                `);
+
+                markers.addLayer(marker);
+                bounds.push([item.lat, item.lon]);
             }
 
-            // Stop map dragging/zoom when using legend
-            L.DomEvent.disableClickPropagation(div);
-            L.DomEvent.disableScrollPropagation(div);
+            // Fit bounds only first time after login (avoid jumping on every filter)
+            if (!isDataLoadedOnce && bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [30, 30] });
+                isDataLoadedOnce = true;
+            }
+        }
 
-            return div;
-        };
-        legend.addTo(map);
+        // ---------- DEBOUNCE FOR SMOOTH UI ----------
+        function debounce(fn, wait) {
+            var t = null;
+            return function () {
+                var ctx = this, args = arguments;
+                clearTimeout(t);
+                t = setTimeout(function () {
+                    fn.apply(ctx, args);
+                }, wait);
+            };
+        }
 
-        // 🚀 LOAD DATA (FULL SCAN + SAFE SKIP)
-        function loadData(selectedType = "ALL", searchText = "") {
-            markers.clearLayers();
-            allMarkersData = [];
+        var debouncedRender = debounce(function () {
+            renderMarkersFromCache();
+        }, 180);
 
-            loadingScreenEl.style.display = "flex";
+        // ---------- FETCH + CACHE ONCE ----------
+        function fetchDataOnceThenRender() {
+            showLoading(true);
 
             fetch(sheetURL)
-                .then(r => r.text())
-                .then(data => {
-                    var rows = data.split("\n");
-                    var typesSet = new Set();
-                    var bounds = [];
-
-                    var maxRows = Math.min(rows.length, 4000);
-
-                    for (var i = 1; i < maxRows; i++) {
-                        if (!rows[i] || rows[i].trim() === "") continue;
-
-                        var cols = rows[i].split("\t");
-                        if (cols.length < 32) continue;
-
-                        var type = cols[1] ? cols[1].trim() : "";
-                        var caption = cols[28] ? cols[28].trim() : "";
-                        var lat = parseFloat(cols[29]);
-                        var lon = parseFloat(cols[30]);
-                        var hq = (cols[31] ? cols[31].trim() : "") || "";
-
-                        if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
-
-                        if (activeTypes.size > 0 && !activeTypes.has(type)) continue;
-                        if (searchText && !caption.toLowerCase().includes(searchText.toLowerCase())) continue;
-
-                        typesSet.add(type);
-
-                        var color = getHQColor(hq);
-                        var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
-
-                        var firstLine = caption.split("\n")[0] || "";
-                        var unitName = firstLine
-                            .replace(/Actual Strength.*/i, "")
-                            .replace(/AVAILABLE STRENGTH.*/i, "")
-                            .replace(/Contact No.*/i, "")
-                            .trim();
-
-                        var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
-                        var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
-
-                        var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
-                        var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
-
-                        var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
-                        var contact = contactMatch ? contactMatch[1].trim() : "";
-
-                        var marker = L.marker([lat, lon], {
-                            icon: createPremiumIcon(color)
-                        }).bindPopup(`
-                            <div style="
-                                min-width:260px;
-                                font-family:'Segoe UI';
-                                border-radius:16px;
-                                overflow:hidden;
-                                background:white;
-                                box-shadow:0 14px 34px rgba(0,0,0,0.28);
-                            ">
-                                <div style="
-                                    background:linear-gradient(135deg,#0d47a1,#1976d2);
-                                    color:white;
-                                    padding:12px 14px;
-                                    font-weight:800;
-                                    font-size:15px;
-                                    letter-spacing:.2px;">
-                                    ${unitName}
-                                </div>
-
-                                ${actualStrength ? `
-                                <div style="padding:10px 14px;background:#e3f2fd;color:#0d47a1;font-size:13px;">
-                                    <b>Actual Strength</b><br>${actualStrength}
-                                </div>` : ""}
-
-                                ${availableStrength ? `
-                                <div style="padding:10px 14px;background:#fff3e0;color:#e65100;font-size:13px;">
-                                    <b>Available Strength</b><br>${availableStrength}
-                                </div>` : ""}
-
-                                ${contact ? `
-                                <div style="padding:10px 14px;background:#f3e5f5;color:#4a148c;font-size:13px;">
-                                    📞 <b>${contact}</b>
-                                </div>` : ""}
-
-                                <div style="padding:10px 14px;text-align:right;">
-                                    <span style="
-                                        background:linear-gradient(135deg,#3949ab,#1e88e5);
-                                        color:white;
-                                        padding:5px 12px;
-                                        border-radius:14px;
-                                        font-size:11px;
-                                        font-weight:800;
-                                        letter-spacing:.2px;">
-                                        ${type}
-                                    </span>
-                                </div>
-                            </div>
-                        `);
-
-                        markers.addLayer(marker);
-                        allMarkersData.push(marker);
-                        bounds.push([lat, lon]);
-                    }
-
-                    // Fill dropdown once
-                    var filter = document.getElementById("typeFilter");
-                    if (filter.options.length <= 1) {
-                        typesSet.forEach(t => {
-                            var opt = document.createElement("option");
-                            opt.value = t;
-                            opt.text = t;
-                            filter.appendChild(opt);
-                        });
-                    }
-
-                    if (bounds.length > 0) {
-                        map.fitBounds(bounds, { padding: [30, 30] });
-                    }
-
-                    loadingScreenEl.style.display = "none";
+                .then(function (r) { return r.text(); })
+                .then(function (tsv) {
+                    parseTSVToCache(tsv);
+                    fillTypeDropdownOnce();
+                    renderMarkersFromCache();
+                    showLoading(false);
                 })
                 .catch(function () {
-                    loadingScreenEl.style.display = "none";
+                    showLoading(false);
                 });
         }
 
-        // 🎛 Type Filter
-        document.getElementById("typeFilter").addEventListener("change", function () {
-            loadData(this.value, document.getElementById("searchBox").value);
-        });
+        // Auto refresh every 10 minutes (refetch TSV, keep smooth)
+        function startAutoRefresh() {
+            setInterval(function () {
+                if (sessionStorage.getItem("loggedIn") === "true") {
+                    fetch(sheetURL)
+                        .then(function (r) { return r.text(); })
+                        .then(function (tsv) {
+                            parseTSVToCache(tsv);
+                            // Keep dropdown as-is after first fill
+                            renderMarkersFromCache();
+                        })
+                        .catch(function () { });
+                }
+            }, 600000);
+        }
 
-        // 🔎 Search Box
-        document.getElementById("searchBox").addEventListener("input", function () {
-            loadData(document.getElementById("typeFilter").value, this.value);
-        });
+        // ---------- INIT MAP AFTER LOGIN ----------
+        function initMapAndUIAfterLogin() {
+            // Show header + panels
+            pageHeaderEl.style.display = "block";
+            filterBoxEl.style.display = "block";
+            topBarEl.style.display = "block";
+            googleSearchBoxEl.style.display = "flex";
 
-        // Legend checkbox handling
-        document.addEventListener("change", function (e) {
-            if (e.target && e.target.id === "selectAll") {
-                var checked = e.target.checked;
-                document.querySelectorAll(".unitCheck").forEach(function (cb) {
-                    cb.checked = checked;
-                    if (checked) activeTypes.add(cb.value);
-                    else activeTypes.delete(cb.value);
+            // Create map only once
+            if (!map) {
+                map = L.map('map', { zoomControl: true }).setView([23.5, 87.5], 7);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap',
+                    maxZoom: 19
+                }).addTo(map);
+
+                map.options.zoomAnimation = true;
+                map.options.fadeAnimation = true;
+
+                markers = L.markerClusterGroup({
+                    disableClusteringAtZoom: 13,
+                    spiderfyOnMaxZoom: true,
+                    showCoverageOnHover: false
                 });
-                loadData();
+                map.addLayer(markers);
+
+                // Build wide legend
+                buildLegend();
+
+                // After DOM painted
+                setTimeout(function () { map.invalidateSize(); }, 300);
             }
 
-            if (e.target && e.target.classList && e.target.classList.contains("unitCheck")) {
-                if (e.target.checked) activeTypes.add(e.target.value);
-                else activeTypes.delete(e.target.value);
-                loadData();
+            // Events: dropdown + search
+            typeFilterEl.addEventListener("change", function () { debouncedRender(); });
+            searchBoxEl.addEventListener("input", function () { debouncedRender(); });
+
+            // Legend checkbox actions
+            document.addEventListener("change", function (e) {
+                if (!e.target) return;
+
+                if (e.target.id === "selectAll") {
+                    var checked = e.target.checked;
+                    document.querySelectorAll(".unitCheck").forEach(function (cb) {
+                        cb.checked = checked;
+                        if (checked) activeTypes.add(cb.value);
+                        else activeTypes.delete(cb.value);
+                    });
+                    debouncedRender();
+                }
+
+                if (e.target.classList && e.target.classList.contains("unitCheck")) {
+                    if (e.target.checked) activeTypes.add(e.target.value);
+                    else activeTypes.delete(e.target.value);
+
+                    // Update Select All checkbox state
+                    var allChecks = document.querySelectorAll(".unitCheck");
+                    var allOn = true;
+                    allChecks.forEach(function (cb) { if (!cb.checked) allOn = false; });
+                    var selAll = document.getElementById("selectAll");
+                    if (selAll) selAll.checked = allOn;
+
+                    debouncedRender();
+                }
+            });
+
+            // Load Google Places only after login (SPEED)
+            loadGooglePlacesAfterLogin();
+
+            // Fetch data once and render
+            fetchDataOnceThenRender();
+
+            // Start auto refresh only once
+            startAutoRefresh();
+        }
+
+        // ---------- GOOGLE PLACES (LOAD ONLY AFTER LOGIN) ----------
+        function loadGooglePlacesAfterLogin() {
+            if (googlePlacesLoaded) return;
+            googlePlacesLoaded = true;
+
+            var script = document.createElement("script");
+            script.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(GOOGLE_PLACES_API_KEY) + "&libraries=places";
+            script.async = true;
+            script.defer = true;
+
+            script.onload = function () {
+                initPlacesSearchBox();
+            };
+
+            document.head.appendChild(script);
+        }
+
+        function initPlacesSearchBox() {
+            if (!window.google || !google.maps || !google.maps.places) return;
+
+            var input = document.getElementById('pac-input');
+            var clearBtn = document.getElementById("clearSearch");
+
+            var searchBox = new google.maps.places.SearchBox(input);
+
+            clearBtn.onclick = function () {
+                input.value = "";
+                clearBtn.style.display = "none";
+                if (searchMarker && map) map.removeLayer(searchMarker);
+            };
+
+            input.addEventListener("input", function () {
+                clearBtn.style.display = this.value ? "block" : "none";
+            });
+
+            searchBox.addListener('places_changed', function () {
+                var places = searchBox.getPlaces();
+                if (!places || !places.length) return;
+
+                var loc = places[0].geometry.location;
+                var lat = loc.lat();
+                var lng = loc.lng();
+
+                if (searchMarker && map) map.removeLayer(searchMarker);
+                if (map) {
+                    searchMarker = L.marker([lat, lng]).addTo(map).bindPopup(places[0].name).openPopup();
+                    map.setView([lat, lng], 14);
+                }
+            });
+        }
+
+        // ---------- LOGIN / LOGOUT ----------
+        function login() {
+            var u = document.getElementById("username").value.trim();
+            var p = document.getElementById("password").value.trim();
+            var users = JSON.parse(localStorage.getItem("users"));
+
+            if (users[u] && users[u] === p) {
+                sessionStorage.setItem("loggedIn", "true");
+                sessionStorage.setItem("currentUser", u);
+
+                loggedUserEl.innerText = u;
+                loginErrorEl.innerText = "";
+
+                // Hide login screen, show app
+                loginScreenEl.style.display = "none";
+
+                // Init after login (FAST)
+                initMapAndUIAfterLogin();
+            } else {
+                loginErrorEl.innerText = "Invalid Username or Password";
             }
-        });
+        }
 
         function logout() {
             sessionStorage.clear();
-            userMenuEl.style.display = "none";
+
+            // Hide app UI
+            pageHeaderEl.style.display = "none";
+            filterBoxEl.style.display = "none";
             topBarEl.style.display = "none";
+            googleSearchBoxEl.style.display = "none";
+            userMenuEl.style.display = "none";
+            userPanelModalEl.style.display = "none";
+            showLoading(false);
+
+            // Show login screen
             loginScreenEl.style.display = "flex";
             loginErrorEl.innerText = "";
-            setTimeout(function () { map.invalidateSize(); }, 300);
+
+            // Clear search marker
+            try {
+                if (searchMarker && map) map.removeLayer(searchMarker);
+                searchMarker = null;
+            } catch (e) { }
+
+            // Clear markers
+            try {
+                if (markers) markers.clearLayers();
+            } catch (e) { }
+
+            // Reset filter inputs
+            try {
+                typeFilterEl.value = "ALL";
+                searchBoxEl.value = "";
+                document.getElementById("pac-input").value = "";
+                document.getElementById("clearSearch").style.display = "none";
+            } catch (e) { }
+        }
+
+        // ---------- USER MANAGEMENT ----------
+        function createUser() {
+            var u = document.getElementById("newUser").value.trim();
+            var p = document.getElementById("newPass").value.trim();
+            var users = JSON.parse(localStorage.getItem("users"));
+            var userMsg = document.getElementById("userMsg");
+
+            if (!u || !p) {
+                userMsg.innerText = "Enter username & password";
+                return;
+            }
+            if (users[u]) {
+                userMsg.innerText = "User already exists!";
+                return;
+            }
+
+            users[u] = p;
+            localStorage.setItem("users", JSON.stringify(users));
+            userMsg.innerText = "User created successfully!";
+            document.getElementById("newUser").value = "";
+            document.getElementById("newPass").value = "";
+        }
+
+        function changePassword() {
+            var u = document.getElementById("changeUser").value.trim();
+            var p = document.getElementById("changePass").value.trim();
+            var users = JSON.parse(localStorage.getItem("users"));
+            var userMsg = document.getElementById("userMsg");
+
+            if (!u) {
+                userMsg.innerText = "Enter username";
+                return;
+            }
+            if (!users[u]) {
+                userMsg.innerText = "User not found!";
+                return;
+            }
+            if (!p) {
+                userMsg.innerText = "Enter new password";
+                return;
+            }
+
+            users[u] = p;
+            localStorage.setItem("users", JSON.stringify(users));
+            userMsg.innerText = "Password changed!";
+            document.getElementById("changeUser").value = "";
+            document.getElementById("changePass").value = "";
         }
 
         function toggleMenu() {
@@ -884,26 +1213,38 @@
         function openUserPanel() {
             userPanelModalEl.style.display = "flex";
             userMenuEl.style.display = "none";
+            document.getElementById("userMsg").innerText = "";
         }
 
         function closeUserPanel() {
             userPanelModalEl.style.display = "none";
         }
 
-        // Start data loading if already logged in
-        if (sessionStorage.getItem("loggedIn") === "true") {
-            setTimeout(function () {
-                map.invalidateSize();
-                loadData();
-            }, 300);
-        }
+        // ---------- ENTER KEY SUPPORT ----------
+        // Login on Enter
+        document.getElementById("username").addEventListener("keydown", function (e) {
+            if (e.key === "Enter") login();
+        });
+        document.getElementById("password").addEventListener("keydown", function (e) {
+            if (e.key === "Enter") login();
+        });
 
-        // 🔁 AUTO REFRESH
-        setInterval(function () {
-            if (sessionStorage.getItem("loggedIn") === "true") {
-                loadData(document.getElementById("typeFilter").value, document.getElementById("searchBox").value);
-            }
-        }, 600000);
+        // Prevent Enter in search boxes from reloading the page
+        searchBoxEl.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") e.preventDefault();
+        });
+        document.getElementById("pac-input").addEventListener("keydown", function (e) {
+            if (e.key === "Enter") e.preventDefault();
+        });
+
+        // ---------- AUTO SESSION CHECK ----------
+        // If user already logged in, skip login screen and open directly
+        if (sessionStorage.getItem("loggedIn") === "true") {
+            var u = sessionStorage.getItem("currentUser") || "admin";
+            loggedUserEl.innerText = u;
+            loginScreenEl.style.display = "none";
+            initMapAndUIAfterLogin();
+        }
     </script>
 
 </body>
