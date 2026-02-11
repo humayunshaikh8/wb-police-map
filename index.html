@@ -318,7 +318,7 @@
         #legendPanel {
             position: relative;
             margin-top: 140px;
-            /* ✅ moved much lower so place suggestions are visible */
+            /* moved lower so place suggestions are visible */
             padding: 12px 12px 10px 12px;
             border-radius: 14px;
             box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
@@ -326,7 +326,6 @@
             overflow: hidden;
         }
 
-        /* remove "Filter Legends" & "Reverse mode": we will not show header at all */
         .legendHeader {
             display: none;
         }
@@ -347,7 +346,6 @@
             user-select: none;
             break-inside: avoid;
             white-space: nowrap;
-            /* ✅ one line */
         }
 
         .legendRow:hover {
@@ -359,7 +357,6 @@
             cursor: pointer;
         }
 
-        /* ✅ bigger legend dots/icons */
         .legendDot {
             width: 18px;
             height: 18px;
@@ -377,10 +374,8 @@
             letter-spacing: .12px;
             line-height: 1.05;
             white-space: nowrap;
-            /* ✅ one line */
         }
 
-        /* Columns */
         #legendList {
             column-count: 2;
             column-gap: 14px;
@@ -432,7 +427,7 @@
             font-weight: 800;
         }
 
-        /* ✅ premium pulse for markers */
+        /* premium pulse for markers */
         @keyframes premiumPulse {
             0% {
                 transform: translateZ(0) scale(1);
@@ -500,8 +495,6 @@
             #legendPanel {
                 margin-top: 160px;
             }
-
-            /* more spacing on mobile */
         }
     </style>
 </head>
@@ -519,7 +512,7 @@
         <input type="text" id="searchBox" placeholder="Search unit name...">
     </div>
 
-    <!-- 🔐 LOGIN SCREEN -->
+    <!-- LOGIN SCREEN -->
     <div id="loginScreen">
         <div class="loginBox">
             <h2>WB Police Force Details</h2>
@@ -550,7 +543,7 @@
             <span id="clearSearch" title="Clear">✖</span>
         </div>
 
-        <!-- ✅ Legend panel (no header words, normal logic, Select All default checked) -->
+        <!-- Legend panel -->
         <div class="legend" id="legendPanel">
             <div class="legendRow" style="padding:8px 6px;">
                 <input type="checkbox" id="selectAllLegend" checked>
@@ -588,7 +581,7 @@
     <!-- LOADING SCREEN -->
     <div id="loadingScreen">Loading Map Data...</div>
 
-    <!-- 🗺 MAP -->
+    <!-- MAP -->
     <div id="map"></div>
 
     <!-- Leaflet + Cluster JS -->
@@ -597,15 +590,18 @@
 
     <script>
         /********************************************************************
-         * YOUR REQUIREMENTS APPLIED:
-         * - Legend lower so Google suggestions visible
-         * - DG RESERVE -> OFFICE one line (nowrap)
-         * - Normal logic: Checked=Show, Unchecked=Hide
-         * - Default: Select All checked and all checked -> all markers visible
-         * - Removed "Filter Legends" and "Reverse mode"
-         * - Bigger legend dots
-         * - Bigger premium map markers
-         * - Keep full login + user management + refresh + filters + places
+         * ✅ FIXED BUG:
+         * Legend list (DG RESERVE ... OFFICE) is HQ values (cols[31]) but
+         * your old filter was checking item.type (cols[1]).
+         *
+         * Now legend filters correctly by item.hq.
+         * Normal logic:
+         *   - Checked = SHOW
+         *   - Unchecked = HIDE
+         * Default:
+         *   - Select All checked
+         *   - All legend items checked
+         *   - All markers visible
          ********************************************************************/
 
         // ---------- CONFIG ----------
@@ -653,12 +649,14 @@
         var cachedRows = [];
         var cachedTypes = new Set();
 
-        // ✅ Normal logic set:
-        // activeTypes = SHOW types
-        var activeTypes = new Set();
+        // ✅ Legend SHOW set for HQ values (DG RESERVE...OFFICE)
+        var activeHQ = new Set();
 
         var isDataLoadedOnce = false;
         var googlePlacesLoaded = false;
+
+        // avoid duplicate event binding on re-login
+        var uiEventsBound = false;
 
         // ---------- COLORS ----------
         function getHQColor(hq) {
@@ -692,7 +690,7 @@
             return colors[hq] || "#000000";
         }
 
-        // ✅ Bigger premium icon
+        // Bigger premium icon
         function createPremiumIcon(color) {
             return L.divIcon({
                 className: '',
@@ -720,7 +718,7 @@
             });
         }
 
-        // ---------- LEGEND ITEMS ----------
+        // ---------- LEGEND ITEMS (HQ list) ----------
         var legendItems = {
             "DG RESERVE": "#e6194b",
             "L&O DUTY": "#3cb44b",
@@ -749,15 +747,14 @@
             "OFFICE": "#c98d8d"
         };
 
-        // ✅ Build legend with NORMAL logic (all checked by default)
+        // Build legend (NORMAL logic: checked = SHOW)
         function buildLegendPanel() {
             legendListEl.innerHTML = "";
-            activeTypes.clear();
+            activeHQ.clear();
 
             // default: all checked -> show all
-            for (var k in legendItems) activeTypes.add(k);
+            for (var k in legendItems) activeHQ.add(k);
 
-            // render list
             for (var key in legendItems) {
                 var row = document.createElement("div");
                 row.className = "legendRow";
@@ -769,10 +766,7 @@
                 legendListEl.appendChild(row);
             }
 
-            // select all checked
             selectAllLegendEl.checked = true;
-
-            // show panel
             legendPanelEl.style.display = "block";
         }
 
@@ -801,20 +795,18 @@
                 var cols = rows[i].split("\t");
                 if (cols.length < 32) continue;
 
-                var type = cols[1] ? cols[1].trim() : "";
+                var type = cols[1] ? cols[1].trim() : "";        // Unit Type
                 var caption = cols[28] ? cols[28].trim() : "";
                 var lat = parseFloat(cols[29]);
                 var lon = parseFloat(cols[30]);
-                var hq = (cols[31] ? cols[31].trim() : "") || "";
+                var hq = (cols[31] ? cols[31].trim() : "") || ""; // HQ legend key
 
                 if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
 
                 cachedTypes.add(type);
 
-                // Clean full text
                 var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 
-                // Unit name from first line
                 var firstLine = caption.split("\n")[0] || "";
                 var unitName = firstLine
                     .replace(/Actual Strength.*/i, "")
@@ -872,22 +864,27 @@
 
             var selectedType = typeFilterEl.value || "ALL";
             var searchText = (searchBoxEl.value || "").trim().toLowerCase();
-
             var bounds = [];
 
             for (var i = 0; i < cachedRows.length; i++) {
                 var item = cachedRows[i];
 
-                // ✅ Normal logic: if NOT checked -> not in activeTypes -> hide
-                if (activeTypes.size > 0 && !activeTypes.has(item.type)) continue;
+                // ✅ FIX: Legend must filter by HQ (item.hq), not item.type
+                var hqKey = (item.hq || "").trim();
 
-                // dropdown
+                // If select all unchecked and no HQ selected => show nothing
+                if (activeHQ.size === 0) continue;
+
+                // If HQ not selected => hide
+                if (!activeHQ.has(hqKey)) continue;
+
+                // Dropdown filter remains by Unit Type
                 if (selectedType !== "ALL" && item.type !== selectedType) continue;
 
-                // search
+                // Search filter
                 if (searchText && item.caption.toLowerCase().indexOf(searchText) === -1) continue;
 
-                var color = legendItems[item.type] || getHQColor(item.hq);
+                var color = legendItems[hqKey] || getHQColor(item.hq);
 
                 var marker = L.marker([item.lat, item.lon], {
                     icon: createPremiumIcon(color)
@@ -925,7 +922,17 @@
                             📞 <b>${item.contact}</b>
                         </div>` : ""}
 
-                        <div style="padding:10px 14px;text-align:right;">
+                        <div style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+                            <span style="
+                                background:linear-gradient(135deg,#37474f,#607d8b);
+                                color:white;
+                                padding:5px 10px;
+                                border-radius:14px;
+                                font-size:11px;
+                                font-weight:900;">
+                                ${hqKey || "HQ"}
+                            </span>
+
                             <span style="
                                 background:linear-gradient(135deg,#3949ab,#1e88e5);
                                 color:white;
@@ -973,6 +980,16 @@
                 .then(function (tsv) {
                     parseTSVToCache(tsv);
                     fillTypeDropdownOnce();
+
+                    // Ensure legend defaults (if not built yet)
+                    if (activeHQ.size === 0) {
+                        for (var k in legendItems) activeHQ.add(k);
+                        selectAllLegendEl.checked = true;
+                        try {
+                            document.querySelectorAll(".unitShowCheck").forEach(function (cb) { cb.checked = true; });
+                        } catch (e) { }
+                    }
+
                     renderMarkersFromCache();
                     showLoading(false);
                 })
@@ -1023,45 +1040,56 @@
                 setTimeout(function () { map.invalidateSize(); }, 300);
             }
 
-            typeFilterEl.addEventListener("change", function () { debouncedRender(); });
-            searchBoxEl.addEventListener("input", function () { debouncedRender(); });
+            // Bind UI events only once (avoid duplicates on re-login)
+            if (!uiEventsBound) {
+                uiEventsBound = true;
 
-            // ✅ Legend events (normal logic)
-            document.addEventListener("change", function (e) {
-                if (!e.target) return;
+                typeFilterEl.addEventListener("change", function () { debouncedRender(); });
+                searchBoxEl.addEventListener("input", function () { debouncedRender(); });
 
-                // select all
-                if (e.target.id === "selectAllLegend") {
-                    var checked = e.target.checked;
+                // Legend events (normal logic, HQ based)
+                document.addEventListener("change", function (e) {
+                    if (!e.target) return;
 
-                    // update set
-                    activeTypes.clear();
-                    if (checked) {
-                        for (var k in legendItems) activeTypes.add(k);
+                    // Select all
+                    if (e.target.id === "selectAllLegend") {
+                        var checked = e.target.checked;
+
+                        activeHQ.clear();
+                        if (checked) {
+                            for (var k in legendItems) activeHQ.add(k);
+                        }
+
+                        document.querySelectorAll(".unitShowCheck").forEach(function (cb) {
+                            cb.checked = checked;
+                        });
+
+                        debouncedRender();
                     }
 
-                    // update checkboxes
-                    document.querySelectorAll(".unitShowCheck").forEach(function (cb) {
-                        cb.checked = checked;
-                    });
+                    // Individual checkbox
+                    if (e.target.classList && e.target.classList.contains("unitShowCheck")) {
+                        if (e.target.checked) activeHQ.add(e.target.value);
+                        else activeHQ.delete(e.target.value);
 
-                    debouncedRender();
-                }
+                        // Update select all state
+                        var allChecks = document.querySelectorAll(".unitShowCheck");
+                        var allOn = true;
+                        allChecks.forEach(function (cb) { if (!cb.checked) allOn = false; });
+                        selectAllLegendEl.checked = allOn;
 
-                // individual checkbox
-                if (e.target.classList && e.target.classList.contains("unitShowCheck")) {
-                    if (e.target.checked) activeTypes.add(e.target.value);
-                    else activeTypes.delete(e.target.value);
+                        debouncedRender();
+                    }
+                });
 
-                    // update select all state
-                    var allChecks = document.querySelectorAll(".unitShowCheck");
-                    var allOn = true;
-                    allChecks.forEach(function (cb) { if (!cb.checked) allOn = false; });
-                    selectAllLegendEl.checked = allOn;
-
-                    debouncedRender();
-                }
-            });
+                // Enter key handling (only once)
+                searchBoxEl.addEventListener("keydown", function (e) {
+                    if (e.key === "Enter") e.preventDefault();
+                });
+                document.getElementById("pac-input").addEventListener("keydown", function (e) {
+                    if (e.key === "Enter") e.preventDefault();
+                });
+            }
 
             loadGooglePlacesAfterLogin();
             fetchDataOnceThenRender();
@@ -1164,9 +1192,15 @@
                 document.getElementById("clearSearch").style.display = "none";
             } catch (e) { }
 
-            // reset legend (normal defaults)
-            activeTypes.clear();
+            // reset legend to defaults
+            activeHQ.clear();
+            for (var k in legendItems) activeHQ.add(k);
             selectAllLegendEl.checked = true;
+            try {
+                document.querySelectorAll(".unitShowCheck").forEach(function (cb) { cb.checked = true; });
+            } catch (e) { }
+
+            isDataLoadedOnce = false;
         }
 
         // ---------- USER MANAGEMENT ----------
@@ -1242,19 +1276,12 @@
             userPanelModalEl.style.display = "none";
         }
 
-        // ---------- ENTER KEY SUPPORT ----------
+        // ---------- ENTER KEY SUPPORT (Login) ----------
         document.getElementById("username").addEventListener("keydown", function (e) {
             if (e.key === "Enter") login();
         });
         document.getElementById("password").addEventListener("keydown", function (e) {
             if (e.key === "Enter") login();
-        });
-
-        searchBoxEl.addEventListener("keydown", function (e) {
-            if (e.key === "Enter") e.preventDefault();
-        });
-        document.getElementById("pac-input").addEventListener("keydown", function (e) {
-            if (e.key === "Enter") e.preventDefault();
         });
 
         // ---------- AUTO SESSION CHECK ----------
