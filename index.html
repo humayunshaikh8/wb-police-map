@@ -260,7 +260,7 @@
             background: linear-gradient(90deg, #e3f2fd, #bbdefb);
         }
 
-        /* PLACE SEARCH (NEUTRAL ICONS, NOT GOOGLE-BRANDED) */
+        /* PLACE SEARCH (NEUTRAL ICONS) */
         #googleSearchBox {
             position: relative;
             margin-top: 12px;
@@ -273,8 +273,8 @@
         }
 
         .placeIcon {
-            width: 26px;
-            height: 26px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -284,6 +284,7 @@
             color: #0b2f6f;
             font-weight: 900;
             user-select: none;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.10);
         }
 
         #googleSearchBox input {
@@ -313,39 +314,21 @@
             transform: scale(1.05);
         }
 
-        /* LEGEND PANEL (AFTER SEARCH BOX) - LIST (NO GRID), TRY FIT WITHOUT SCROLL */
+        /* LEGEND PANEL (AFTER SEARCH BOX) */
         #legendPanel {
             position: relative;
-            margin-top: 12px;
+            margin-top: 140px;
+            /* ✅ moved much lower so place suggestions are visible */
             padding: 12px 12px 10px 12px;
             border-radius: 14px;
             box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
             display: none;
             overflow: hidden;
-            /* no scrollbars */
         }
 
+        /* remove "Filter Legends" & "Reverse mode": we will not show header at all */
         .legendHeader {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-
-        .legendHeader b {
-            color: #0b2f6f;
-            letter-spacing: .2px;
-            font-size: 13px;
-        }
-
-        .legendHeader .smallNote {
-            font-size: 11.5px;
-            opacity: .75;
-            color: #0b2f6f;
-            font-weight: 700;
-            line-height: 1.2;
-            text-align: right;
+            display: none;
         }
 
         .legend hr {
@@ -357,12 +340,14 @@
         .legendRow {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 5px 6px;
+            gap: 10px;
+            padding: 6px 6px;
             border-radius: 12px;
             transition: .18s;
             user-select: none;
             break-inside: avoid;
+            white-space: nowrap;
+            /* ✅ one line */
         }
 
         .legendRow:hover {
@@ -370,31 +355,35 @@
         }
 
         .legendRow input[type="checkbox"] {
-            transform: scale(1.05);
+            transform: scale(1.08);
             cursor: pointer;
         }
 
+        /* ✅ bigger legend dots/icons */
         .legendDot {
-            width: 11px;
-            height: 11px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             display: inline-block;
-            border: 2px solid rgba(255, 255, 255, 0.95);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+            border: 3px solid rgba(255, 255, 255, 0.95);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+            flex: 0 0 auto;
         }
 
         .legendText {
-            font-size: 12px;
-            font-weight: 800;
+            font-size: 12.5px;
+            font-weight: 900;
             color: #0b2f6f;
             letter-spacing: .12px;
-            line-height: 1.1;
+            line-height: 1.05;
+            white-space: nowrap;
+            /* ✅ one line */
         }
 
-        /* Columns (NOT GRID) to fit more items without scrolling */
+        /* Columns */
         #legendList {
             column-count: 2;
-            column-gap: 10px;
+            column-gap: 14px;
         }
 
         /* USER MANAGEMENT MODAL */
@@ -443,21 +432,25 @@
             font-weight: 800;
         }
 
-        @keyframes pulse {
+        /* ✅ premium pulse for markers */
+        @keyframes premiumPulse {
             0% {
-                box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
+                transform: translateZ(0) scale(1);
+                filter: brightness(1);
             }
 
             50% {
-                box-shadow: 0 0 18px rgba(0, 0, 0, 0.75);
+                transform: translateZ(0) scale(1.05);
+                filter: brightness(1.15);
             }
 
             100% {
-                box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
+                transform: translateZ(0) scale(1);
+                filter: brightness(1);
             }
         }
 
-        /* LOADING OVERLAY (MAP DATA LOADING) */
+        /* LOADING OVERLAY */
         #loadingScreen {
             position: fixed;
             width: 100%;
@@ -490,7 +483,7 @@
             box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16) !important;
         }
 
-        /* Responsive adjustments */
+        /* Responsive */
         @media (max-width: 740px) {
             #topBar {
                 width: calc(100vw - 40px);
@@ -503,6 +496,12 @@
             #legendList {
                 column-count: 1;
             }
+
+            #legendPanel {
+                margin-top: 160px;
+            }
+
+            /* more spacing on mobile */
         }
     </style>
 </head>
@@ -520,7 +519,7 @@
         <input type="text" id="searchBox" placeholder="Search unit name...">
     </div>
 
-    <!-- 🔐 LOGIN SCREEN (FIRST PAGE) -->
+    <!-- 🔐 LOGIN SCREEN -->
     <div id="loginScreen">
         <div class="loginBox">
             <h2>WB Police Force Details</h2>
@@ -551,18 +550,11 @@
             <span id="clearSearch" title="Clear">✖</span>
         </div>
 
-        <!-- Legend panel appears AFTER search box -->
+        <!-- ✅ Legend panel (no header words, normal logic, Select All default checked) -->
         <div class="legend" id="legendPanel">
-            <div class="legendHeader">
-                <b>Filter Legends</b>
-                <span class="smallNote">
-                    Reverse mode:<br><b>Unchecked = Show</b><br><b>Checked = Hide</b>
-                </span>
-            </div>
-
-            <div class="legendRow" style="padding:7px 6px;">
-                <input type="checkbox" id="hideAll">
-                <span class="legendText">Hide All (check = hide everything)</span>
+            <div class="legendRow" style="padding:8px 6px;">
+                <input type="checkbox" id="selectAllLegend" checked>
+                <span class="legendText">Select All</span>
             </div>
 
             <hr>
@@ -599,20 +591,21 @@
     <!-- 🗺 MAP -->
     <div id="map"></div>
 
-    <!-- Leaflet + Cluster JS (lightweight) -->
+    <!-- Leaflet + Cluster JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
     <script>
         /********************************************************************
-         * CHANGES YOU ASKED:
-         * 1) Legend moved under the place search box (top-right)
-         * 2) Legend list is NOT GRID, uses CSS columns (no scrolling)
-         * 3) Reverse checkbox logic:
-         *      - Unchecked => SHOW
-         *      - Checked   => HIDE
-         * 4) Added neutral icons near search input (NOT Google-branded logo)
-         * 5) Download users.txt from the users you created/modified (plaintext)
+         * YOUR REQUIREMENTS APPLIED:
+         * - Legend lower so Google suggestions visible
+         * - DG RESERVE -> OFFICE one line (nowrap)
+         * - Normal logic: Checked=Show, Unchecked=Hide
+         * - Default: Select All checked and all checked -> all markers visible
+         * - Removed "Filter Legends" and "Reverse mode"
+         * - Bigger legend dots
+         * - Bigger premium map markers
+         * - Keep full login + user management + refresh + filters + places
          ********************************************************************/
 
         // ---------- CONFIG ----------
@@ -635,17 +628,15 @@
 
         var legendPanelEl = document.getElementById("legendPanel");
         var legendListEl = document.getElementById("legendList");
-        var hideAllEl = document.getElementById("hideAll");
+        var selectAllLegendEl = document.getElementById("selectAllLegend");
 
         var typeFilterEl = document.getElementById("typeFilter");
         var searchBoxEl = document.getElementById("searchBox");
 
         // ---------- DEFAULT USERS ----------
-        // Default: admin/admin (always first)
         if (!localStorage.getItem("users")) {
             localStorage.setItem("users", JSON.stringify({ "admin": "admin" }));
         } else {
-            // Ensure admin exists even if storage got changed accidentally
             var _usersEnsure = JSON.parse(localStorage.getItem("users"));
             if (!_usersEnsure["admin"]) {
                 _usersEnsure["admin"] = "admin";
@@ -653,23 +644,20 @@
             }
         }
 
-        // ---------- MAP VARIABLES (init after login) ----------
+        // ---------- MAP VARIABLES ----------
         var map = null;
         var markers = null;
         var searchMarker = null;
 
-        // Cached data for smooth filtering
-        var cachedRows = [];              // array of parsed items
-        var cachedTypes = new Set();      // types for dropdown
+        // Cached data
+        var cachedRows = [];
+        var cachedTypes = new Set();
 
-        // Reverse logic:
-        // checked = HIDE, unchecked = SHOW
-        // So we maintain a set of types that are hidden.
-        var hiddenTypes = new Set();
+        // ✅ Normal logic set:
+        // activeTypes = SHOW types
+        var activeTypes = new Set();
 
         var isDataLoadedOnce = false;
-
-        // Google Places loaded flag
         var googlePlacesLoaded = false;
 
         // ---------- COLORS ----------
@@ -704,25 +692,35 @@
             return colors[hq] || "#000000";
         }
 
-        // ⭐ Premium Glowing Icon
+        // ✅ Bigger premium icon
         function createPremiumIcon(color) {
             return L.divIcon({
                 className: '',
                 html: `
                     <div style="
-                        width:20px;height:20px;
-                        background:${color};
+                        width:34px;height:34px;
                         border-radius:50%;
-                        border:3px solid white;
-                        box-shadow:0 0 8px ${color},0 0 14px ${color},0 0 22px ${color};
-                        animation:pulse 2s infinite;
-                    "></div>`,
-                iconSize: [26, 26],
-                iconAnchor: [13, 13]
+                        background: radial-gradient(circle at 30% 30%, #ffffff 0%, ${color} 35%, ${color} 65%, rgba(0,0,0,0.25) 100%);
+                        border:4px solid rgba(255,255,255,0.98);
+                        box-shadow:
+                          0 0 10px ${color},
+                          0 0 18px ${color},
+                          0 0 32px rgba(0,0,0,0.55);
+                        animation: premiumPulse 1.8s infinite;
+                    ">
+                      <div style="
+                        width:10px;height:10px;border-radius:50%;
+                        background: rgba(255,255,255,0.95);
+                        position:relative; top:6px; left:7px;
+                        box-shadow: 0 0 10px rgba(255,255,255,0.55);
+                      "></div>
+                    </div>`,
+                iconSize: [38, 38],
+                iconAnchor: [19, 19]
             });
         }
 
-        // ---------- LEGEND (TOP RIGHT, AFTER SEARCH BOX) ----------
+        // ---------- LEGEND ITEMS ----------
         var legendItems = {
             "DG RESERVE": "#e6194b",
             "L&O DUTY": "#3cb44b",
@@ -751,44 +749,45 @@
             "OFFICE": "#c98d8d"
         };
 
+        // ✅ Build legend with NORMAL logic (all checked by default)
         function buildLegendPanel() {
-            // Default: show ALL => nothing hidden => all checkboxes UNCHECKED
-            hiddenTypes.clear();
-
-            // Render list
             legendListEl.innerHTML = "";
-            legendListEl.id = "legendList"; // keep id for css columns
+            activeTypes.clear();
 
-            for (var k in legendItems) {
+            // default: all checked -> show all
+            for (var k in legendItems) activeTypes.add(k);
+
+            // render list
+            for (var key in legendItems) {
                 var row = document.createElement("div");
                 row.className = "legendRow";
                 row.innerHTML = `
-                    <input type="checkbox" class="unitHideCheck" value="${k}">
-                    <span class="legendDot" style="background:${legendItems[k]};"></span>
-                    <span class="legendText">${k}</span>
+                    <input type="checkbox" class="unitShowCheck" value="${key}" checked>
+                    <span class="legendDot" style="background:${legendItems[key]};"></span>
+                    <span class="legendText">${key}</span>
                 `;
                 legendListEl.appendChild(row);
             }
 
-            // Show legend panel
+            // select all checked
+            selectAllLegendEl.checked = true;
+
+            // show panel
             legendPanelEl.style.display = "block";
         }
 
-        // Prevent legend panel clicks from dragging the map
+        // Prevent panels from dragging map
         function stopMapInteractionOnPanel(el) {
             if (!el) return;
             ["mousedown", "touchstart", "dblclick", "wheel"].forEach(function (evt) {
-                el.addEventListener(evt, function (e) {
-                    e.stopPropagation();
-                }, { passive: false });
+                el.addEventListener(evt, function (e) { e.stopPropagation(); }, { passive: false });
             });
         }
-
         stopMapInteractionOnPanel(legendPanelEl);
         stopMapInteractionOnPanel(googleSearchBoxEl);
         stopMapInteractionOnPanel(filterBoxEl);
 
-        // ---------- DATA PARSING (ONE TIME) ----------
+        // ---------- DATA PARSING ----------
         function parseTSVToCache(tsvText) {
             cachedRows = [];
             cachedTypes.clear();
@@ -852,7 +851,6 @@
         }
 
         function fillTypeDropdownOnce() {
-            // Fill dropdown only if not filled
             if (typeFilterEl.options.length > 1) return;
 
             var arr = Array.from(cachedTypes);
@@ -866,7 +864,7 @@
             }
         }
 
-        // ---------- RENDER MARKERS (FAST FILTERING IN MEMORY) ----------
+        // ---------- RENDER MARKERS ----------
         function renderMarkersFromCache() {
             if (!map || !markers) return;
 
@@ -880,17 +878,16 @@
             for (var i = 0; i < cachedRows.length; i++) {
                 var item = cachedRows[i];
 
-                // Reverse legend filter:
-                // If a type is hidden (checkbox checked) => skip
-                if (hiddenTypes.has(item.type)) continue;
+                // ✅ Normal logic: if NOT checked -> not in activeTypes -> hide
+                if (activeTypes.size > 0 && !activeTypes.has(item.type)) continue;
 
-                // Apply dropdown filter (Unit Type)
+                // dropdown
                 if (selectedType !== "ALL" && item.type !== selectedType) continue;
 
-                // Apply text search
+                // search
                 if (searchText && item.caption.toLowerCase().indexOf(searchText) === -1) continue;
 
-                var color = getHQColor(item.hq);
+                var color = legendItems[item.type] || getHQColor(item.hq);
 
                 var marker = L.marker([item.lat, item.lon], {
                     icon: createPremiumIcon(color)
@@ -947,22 +944,19 @@
                 bounds.push([item.lat, item.lon]);
             }
 
-            // Fit bounds only first time after login (avoid jumping on every filter)
             if (!isDataLoadedOnce && bounds.length > 0) {
                 map.fitBounds(bounds, { padding: [30, 30] });
                 isDataLoadedOnce = true;
             }
         }
 
-        // ---------- DEBOUNCE FOR SMOOTH UI ----------
+        // ---------- DEBOUNCE ----------
         function debounce(fn, wait) {
             var t = null;
             return function () {
                 var ctx = this, args = arguments;
                 clearTimeout(t);
-                t = setTimeout(function () {
-                    fn.apply(ctx, args);
-                }, wait);
+                t = setTimeout(function () { fn.apply(ctx, args); }, wait);
             };
         }
 
@@ -970,7 +964,7 @@
             renderMarkersFromCache();
         }, 180);
 
-        // ---------- FETCH + CACHE ONCE ----------
+        // ---------- FETCH + CACHE ----------
         function fetchDataOnceThenRender() {
             showLoading(true);
 
@@ -987,7 +981,6 @@
                 });
         }
 
-        // Auto refresh every 10 minutes (refetch TSV, keep smooth)
         function startAutoRefresh() {
             setInterval(function () {
                 if (sessionStorage.getItem("loggedIn") === "true") {
@@ -1002,18 +995,16 @@
             }, 600000);
         }
 
-        // ---------- INIT MAP AFTER LOGIN ----------
+        // ---------- INIT AFTER LOGIN ----------
         function initMapAndUIAfterLogin() {
-            // Show header + panels
             pageHeaderEl.style.display = "block";
             filterBoxEl.style.display = "block";
             topBarEl.style.display = "block";
             googleSearchBoxEl.style.display = "flex";
 
-            // Show legend panel after search box
+            // build legend with all checked default
             buildLegendPanel();
 
-            // Create map only once
             if (!map) {
                 map = L.map('map', { zoomControl: true }).setView([23.5, 87.5], 7);
 
@@ -1021,9 +1012,6 @@
                     attribution: '© OpenStreetMap',
                     maxZoom: 19
                 }).addTo(map);
-
-                map.options.zoomAnimation = true;
-                map.options.fadeAnimation = true;
 
                 markers = L.markerClusterGroup({
                     disableClusteringAtZoom: 13,
@@ -1035,61 +1023,52 @@
                 setTimeout(function () { map.invalidateSize(); }, 300);
             }
 
-            // Events: dropdown + search
             typeFilterEl.addEventListener("change", function () { debouncedRender(); });
             searchBoxEl.addEventListener("input", function () { debouncedRender(); });
 
-            // Reverse checkbox events
+            // ✅ Legend events (normal logic)
             document.addEventListener("change", function (e) {
                 if (!e.target) return;
 
-                // Hide all master checkbox
-                if (e.target.id === "hideAll") {
-                    var hideEverything = e.target.checked;
+                // select all
+                if (e.target.id === "selectAllLegend") {
+                    var checked = e.target.checked;
 
-                    // If checked => hide all => check all unit checkboxes + add all to hiddenTypes
-                    // If unchecked => show all => uncheck all + clear hiddenTypes
-                    var checks = document.querySelectorAll(".unitHideCheck");
-                    if (hideEverything) {
-                        hiddenTypes.clear();
-                        for (var k in legendItems) hiddenTypes.add(k);
-                        checks.forEach(function (cb) { cb.checked = true; });
-                    } else {
-                        hiddenTypes.clear();
-                        checks.forEach(function (cb) { cb.checked = false; });
+                    // update set
+                    activeTypes.clear();
+                    if (checked) {
+                        for (var k in legendItems) activeTypes.add(k);
                     }
+
+                    // update checkboxes
+                    document.querySelectorAll(".unitShowCheck").forEach(function (cb) {
+                        cb.checked = checked;
+                    });
 
                     debouncedRender();
                 }
 
-                // Individual legend checkbox:
-                // checked => HIDE => add to hiddenTypes
-                // unchecked => SHOW => remove from hiddenTypes
-                if (e.target.classList && e.target.classList.contains("unitHideCheck")) {
-                    if (e.target.checked) hiddenTypes.add(e.target.value);
-                    else hiddenTypes.delete(e.target.value);
+                // individual checkbox
+                if (e.target.classList && e.target.classList.contains("unitShowCheck")) {
+                    if (e.target.checked) activeTypes.add(e.target.value);
+                    else activeTypes.delete(e.target.value);
 
-                    // Update hideAll state if everything hidden
-                    var allChecks = document.querySelectorAll(".unitHideCheck");
-                    var allHidden = true;
-                    allChecks.forEach(function (cb) { if (!cb.checked) allHidden = false; });
-                    hideAllEl.checked = allHidden;
+                    // update select all state
+                    var allChecks = document.querySelectorAll(".unitShowCheck");
+                    var allOn = true;
+                    allChecks.forEach(function (cb) { if (!cb.checked) allOn = false; });
+                    selectAllLegendEl.checked = allOn;
 
                     debouncedRender();
                 }
             });
 
-            // Load Google Places only after login (SPEED)
             loadGooglePlacesAfterLogin();
-
-            // Fetch data once and render
             fetchDataOnceThenRender();
-
-            // Start auto refresh only once
             startAutoRefresh();
         }
 
-        // ---------- GOOGLE PLACES (LOAD ONLY AFTER LOGIN) ----------
+        // ---------- GOOGLE PLACES ----------
         function loadGooglePlacesAfterLogin() {
             if (googlePlacesLoaded) return;
             googlePlacesLoaded = true;
@@ -1099,10 +1078,7 @@
             script.async = true;
             script.defer = true;
 
-            script.onload = function () {
-                initPlacesSearchBox();
-            };
-
+            script.onload = function () { initPlacesSearchBox(); };
             document.head.appendChild(script);
         }
 
@@ -1111,7 +1087,6 @@
 
             var input = document.getElementById('pac-input');
             var clearBtn = document.getElementById("clearSearch");
-
             var searchBox = new google.maps.places.SearchBox(input);
 
             clearBtn.onclick = function () {
@@ -1152,11 +1127,8 @@
 
                 loggedUserEl.innerText = u;
                 loginErrorEl.innerText = "";
-
-                // Hide login screen, show app
                 loginScreenEl.style.display = "none";
 
-                // Init after login (FAST)
                 initMapAndUIAfterLogin();
             } else {
                 loginErrorEl.innerText = "Invalid Username or Password";
@@ -1166,7 +1138,6 @@
         function logout() {
             sessionStorage.clear();
 
-            // Hide app UI
             pageHeaderEl.style.display = "none";
             filterBoxEl.style.display = "none";
             topBarEl.style.display = "none";
@@ -1176,22 +1147,16 @@
             userPanelModalEl.style.display = "none";
             showLoading(false);
 
-            // Show login screen
             loginScreenEl.style.display = "flex";
             loginErrorEl.innerText = "";
 
-            // Clear search marker
             try {
                 if (searchMarker && map) map.removeLayer(searchMarker);
                 searchMarker = null;
             } catch (e) { }
 
-            // Clear markers
-            try {
-                if (markers) markers.clearLayers();
-            } catch (e) { }
+            try { if (markers) markers.clearLayers(); } catch (e) { }
 
-            // Reset filter inputs
             try {
                 typeFilterEl.value = "ALL";
                 searchBoxEl.value = "";
@@ -1199,12 +1164,9 @@
                 document.getElementById("clearSearch").style.display = "none";
             } catch (e) { }
 
-            // Reset reverse filter state
-            hiddenTypes.clear();
-            hideAllEl.checked = false;
-            try {
-                document.querySelectorAll(".unitHideCheck").forEach(function (cb) { cb.checked = false; });
-            } catch (e) { }
+            // reset legend (normal defaults)
+            activeTypes.clear();
+            selectAllLegendEl.checked = true;
         }
 
         // ---------- USER MANAGEMENT ----------
@@ -1214,14 +1176,8 @@
             var users = JSON.parse(localStorage.getItem("users"));
             var userMsg = document.getElementById("userMsg");
 
-            if (!u || !p) {
-                userMsg.innerText = "Enter username & password";
-                return;
-            }
-            if (users[u]) {
-                userMsg.innerText = "User already exists!";
-                return;
-            }
+            if (!u || !p) { userMsg.innerText = "Enter username & password"; return; }
+            if (users[u]) { userMsg.innerText = "User already exists!"; return; }
 
             users[u] = p;
             localStorage.setItem("users", JSON.stringify(users));
@@ -1236,18 +1192,9 @@
             var users = JSON.parse(localStorage.getItem("users"));
             var userMsg = document.getElementById("userMsg");
 
-            if (!u) {
-                userMsg.innerText = "Enter username";
-                return;
-            }
-            if (!users[u]) {
-                userMsg.innerText = "User not found!";
-                return;
-            }
-            if (!p) {
-                userMsg.innerText = "Enter new password";
-                return;
-            }
+            if (!u) { userMsg.innerText = "Enter username"; return; }
+            if (!users[u]) { userMsg.innerText = "User not found!"; return; }
+            if (!p) { userMsg.innerText = "Enter new password"; return; }
 
             users[u] = p;
             localStorage.setItem("users", JSON.stringify(users));
@@ -1256,7 +1203,6 @@
             document.getElementById("changePass").value = "";
         }
 
-        // Download users.txt (plaintext) - for testing only
         function downloadUsersTxt() {
             var users = JSON.parse(localStorage.getItem("users")) || {};
             var lines = [];
@@ -1278,10 +1224,7 @@
             a.click();
             document.body.removeChild(a);
 
-            setTimeout(function () {
-                URL.revokeObjectURL(url);
-            }, 500);
-
+            setTimeout(function () { URL.revokeObjectURL(url); }, 500);
             document.getElementById("userMsg").innerText = "users.txt downloaded (testing only).";
         }
 
@@ -1300,7 +1243,6 @@
         }
 
         // ---------- ENTER KEY SUPPORT ----------
-        // Login on Enter
         document.getElementById("username").addEventListener("keydown", function (e) {
             if (e.key === "Enter") login();
         });
@@ -1308,7 +1250,6 @@
             if (e.key === "Enter") login();
         });
 
-        // Prevent Enter in search boxes from reloading the page
         searchBoxEl.addEventListener("keydown", function (e) {
             if (e.key === "Enter") e.preventDefault();
         });
@@ -1317,7 +1258,6 @@
         });
 
         // ---------- AUTO SESSION CHECK ----------
-        // If user already logged in, skip login screen and open directly
         if (sessionStorage.getItem("loggedIn") === "true") {
             var u = sessionStorage.getItem("currentUser") || "admin";
             loggedUserEl.innerText = u;
