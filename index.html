@@ -34,6 +34,7 @@
             margin: 0;
             font-family: 'Segoe UI', sans-serif;
             background: #f4f6f9;
+            overflow: hidden;
         }
 
         /* MAP */
@@ -42,6 +43,12 @@
             width: 100vw;
             filter: saturate(1.05) contrast(1.05);
             z-index: 1;
+        }
+
+        /* IMPORTANT: make Google suggestions always clickable above our panels */
+        .pac-container {
+            z-index: 100000 !important;
+            pointer-events: auto !important;
         }
 
         /* HEADER */
@@ -95,18 +102,7 @@
             letter-spacing: .2px;
         }
 
-        #typeFilter {
-            width: 100%;
-            padding: 10px 10px;
-            border-radius: 12px;
-            border: 1px solid rgba(13, 71, 161, 0.18);
-            outline: none;
-            background: rgba(255, 255, 255, 0.92);
-            font-family: 'Segoe UI', sans-serif;
-            font-weight: 700;
-            color: #0d47a1;
-        }
-
+        #typeFilter,
         #searchBox {
             width: 100%;
             padding: 10px 10px;
@@ -115,6 +111,11 @@
             outline: none;
             background: rgba(255, 255, 255, 0.92);
             font-family: 'Segoe UI', sans-serif;
+        }
+
+        #typeFilter {
+            font-weight: 700;
+            color: #0d47a1;
         }
 
         #typeFilter:focus,
@@ -260,7 +261,7 @@
             background: linear-gradient(90deg, #e3f2fd, #bbdefb);
         }
 
-        /* PLACE SEARCH (NEUTRAL ICONS) */
+        /* PLACE SEARCH */
         #googleSearchBox {
             position: relative;
             margin-top: 12px;
@@ -272,11 +273,11 @@
             gap: 10px;
         }
 
-        .placeIcon {
-            width: 28px;
-            height: 28px;
+        .placeIconBtn {
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             background: linear-gradient(135deg, rgba(13, 71, 161, 0.10), rgba(30, 136, 229, 0.14));
@@ -285,6 +286,13 @@
             font-weight: 900;
             user-select: none;
             box-shadow: 0 8px 18px rgba(0, 0, 0, 0.10);
+            cursor: pointer;
+            padding: 0;
+            outline: none;
+        }
+
+        .placeIconBtn:active {
+            transform: scale(0.98);
         }
 
         #googleSearchBox input {
@@ -314,11 +322,11 @@
             transform: scale(1.05);
         }
 
-        /* LEGEND PANEL (AFTER SEARCH BOX) */
+        /* LEGEND PANEL (slightly lower than before) */
         #legendPanel {
             position: relative;
-            margin-top: 140px;
-            /* moved lower so place suggestions are visible */
+            margin-top: 175px;
+            /* ✅ slightly lower so suggestions never hide */
             padding: 12px 12px 10px 12px;
             border-radius: 14px;
             box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
@@ -462,7 +470,6 @@
             user-select: none;
         }
 
-        /* Leaflet popup polish */
         .leaflet-popup-content-wrapper {
             border-radius: 16px !important;
             box-shadow: 0 18px 42px rgba(0, 0, 0, 0.30) !important;
@@ -478,22 +485,73 @@
             box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16) !important;
         }
 
-        /* Responsive */
+        /* ✅ MOBILE COMPATIBLE MODE */
+        @media (max-width: 900px) {
+            .filterBox {
+                top: 80px;
+                left: 14px;
+                min-width: 240px;
+            }
+
+            #topBar {
+                right: 14px;
+                width: 340px;
+            }
+        }
+
         @media (max-width: 740px) {
             #topBar {
-                width: calc(100vw - 40px);
+                right: 10px;
+                left: 10px;
+                width: auto;
+                max-width: none;
+            }
+
+            #userInfo {
+                width: 100%;
+                text-align: center;
+            }
+
+            #googleSearchBox {
+                width: 100%;
+                padding: 10px 12px;
             }
 
             #googleSearchBox input {
-                width: 170px;
+                width: 100%;
+            }
+
+            #legendPanel {
+                width: 100%;
+                margin-top: 190px;
+                /* more space on mobile */
             }
 
             #legendList {
                 column-count: 1;
             }
 
+            .filterBox {
+                left: 10px;
+                right: 10px;
+                min-width: unset;
+                width: auto;
+                top: calc(15px + 48px + 12px + 48px + 12px);
+                /* after top elements */
+            }
+        }
+
+        @media (max-width: 480px) {
+
+            /* On small phones: allow legend scroll so all items accessible */
             #legendPanel {
-                margin-top: 160px;
+                margin-top: 205px;
+                max-height: 55vh;
+                overflow: auto;
+            }
+
+            .loginBox {
+                width: calc(100vw - 40px);
             }
         }
     </style>
@@ -537,9 +595,9 @@
 
         <!-- Place Search box -->
         <div id="googleSearchBox">
-            <div class="placeIcon" title="Place Search">📍</div>
+            <button class="placeIconBtn" id="pinBtn" title="Place Search" type="button">📍</button>
             <input id="pac-input" type="text" placeholder="Search place...">
-            <div class="placeIcon" title="Search">🔎</div>
+            <button class="placeIconBtn" id="searchBtn" title="Search" type="button">🔎</button>
             <span id="clearSearch" title="Clear">✖</span>
         </div>
 
@@ -590,24 +648,15 @@
 
     <script>
         /********************************************************************
-         * ✅ FIXED BUG:
-         * Legend list (DG RESERVE ... OFFICE) is HQ values (cols[31]) but
-         * your old filter was checking item.type (cols[1]).
-         *
-         * Now legend filters correctly by item.hq.
-         * Normal logic:
-         *   - Checked = SHOW
-         *   - Unchecked = HIDE
-         * Default:
-         *   - Select All checked
-         *   - All legend items checked
-         *   - All markers visible
+         * FIXES ADDED NOW:
+         * ✅ Google suggestions click works (z-index pac-container)
+         * ✅ Search icon button works (click 🔎 to search even without Enter)
+         * ✅ Legend panel slightly lower
+         * ✅ Mobile compatible layout + legend scroll on small screens
          ********************************************************************/
 
         // ---------- CONFIG ----------
         var GOOGLE_PLACES_API_KEY = "AIzaSyBiP3uf8ZRTvrGB6zsce2iVWj1H_IFnMsg";
-
-        // TSV SOURCE
         var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv";
 
         // ---------- ELEMENTS ----------
@@ -629,6 +678,11 @@
         var typeFilterEl = document.getElementById("typeFilter");
         var searchBoxEl = document.getElementById("searchBox");
 
+        var pacInputEl = document.getElementById("pac-input");
+        var clearBtn = document.getElementById("clearSearch");
+        var searchBtn = document.getElementById("searchBtn");
+        var pinBtn = document.getElementById("pinBtn");
+
         // ---------- DEFAULT USERS ----------
         if (!localStorage.getItem("users")) {
             localStorage.setItem("users", JSON.stringify({ "admin": "admin" }));
@@ -649,14 +703,18 @@
         var cachedRows = [];
         var cachedTypes = new Set();
 
-        // ✅ Legend SHOW set for HQ values (DG RESERVE...OFFICE)
+        // Legend SHOW set for HQ values
         var activeHQ = new Set();
 
         var isDataLoadedOnce = false;
         var googlePlacesLoaded = false;
-
-        // avoid duplicate event binding on re-login
         var uiEventsBound = false;
+
+        // Google places objects
+        var autocomplete = null;
+        var lastSelectedPlace = null;
+        var placeService = null;
+        var geocoder = null;
 
         // ---------- COLORS ----------
         function getHQColor(hq) {
@@ -690,29 +748,25 @@
             return colors[hq] || "#000000";
         }
 
-        // Bigger premium icon
         function createPremiumIcon(color) {
             return L.divIcon({
                 className: '',
                 html: `
-                    <div style="
-                        width:34px;height:34px;
-                        border-radius:50%;
-                        background: radial-gradient(circle at 30% 30%, #ffffff 0%, ${color} 35%, ${color} 65%, rgba(0,0,0,0.25) 100%);
-                        border:4px solid rgba(255,255,255,0.98);
-                        box-shadow:
-                          0 0 10px ${color},
-                          0 0 18px ${color},
-                          0 0 32px rgba(0,0,0,0.55);
-                        animation: premiumPulse 1.8s infinite;
-                    ">
-                      <div style="
-                        width:10px;height:10px;border-radius:50%;
-                        background: rgba(255,255,255,0.95);
-                        position:relative; top:6px; left:7px;
-                        box-shadow: 0 0 10px rgba(255,255,255,0.55);
-                      "></div>
-                    </div>`,
+          <div style="
+            width:34px;height:34px;
+            border-radius:50%;
+            background: radial-gradient(circle at 30% 30%, #ffffff 0%, ${color} 35%, ${color} 65%, rgba(0,0,0,0.25) 100%);
+            border:4px solid rgba(255,255,255,0.98);
+            box-shadow: 0 0 10px ${color}, 0 0 18px ${color}, 0 0 32px rgba(0,0,0,0.55);
+            animation: premiumPulse 1.8s infinite;
+          ">
+            <div style="
+              width:10px;height:10px;border-radius:50%;
+              background: rgba(255,255,255,0.95);
+              position:relative; top:6px; left:7px;
+              box-shadow: 0 0 10px rgba(255,255,255,0.55);
+            "></div>
+          </div>`,
                 iconSize: [38, 38],
                 iconAnchor: [19, 19]
             });
@@ -747,22 +801,20 @@
             "OFFICE": "#c98d8d"
         };
 
-        // Build legend (NORMAL logic: checked = SHOW)
         function buildLegendPanel() {
             legendListEl.innerHTML = "";
             activeHQ.clear();
 
-            // default: all checked -> show all
             for (var k in legendItems) activeHQ.add(k);
 
             for (var key in legendItems) {
                 var row = document.createElement("div");
                 row.className = "legendRow";
                 row.innerHTML = `
-                    <input type="checkbox" class="unitShowCheck" value="${key}" checked>
-                    <span class="legendDot" style="background:${legendItems[key]};"></span>
-                    <span class="legendText">${key}</span>
-                `;
+          <input type="checkbox" class="unitShowCheck" value="${key}" checked>
+          <span class="legendDot" style="background:${legendItems[key]};"></span>
+          <span class="legendText">${key}</span>
+        `;
                 legendListEl.appendChild(row);
             }
 
@@ -770,7 +822,7 @@
             legendPanelEl.style.display = "block";
         }
 
-        // Prevent panels from dragging map
+        // Prevent our panels from dragging map (but suggestions remain clickable because pac-container is outside)
         function stopMapInteractionOnPanel(el) {
             if (!el) return;
             ["mousedown", "touchstart", "dblclick", "wheel"].forEach(function (evt) {
@@ -795,18 +847,17 @@
                 var cols = rows[i].split("\t");
                 if (cols.length < 32) continue;
 
-                var type = cols[1] ? cols[1].trim() : "";        // Unit Type
+                var type = cols[1] ? cols[1].trim() : "";
                 var caption = cols[28] ? cols[28].trim() : "";
                 var lat = parseFloat(cols[29]);
                 var lon = parseFloat(cols[30]);
-                var hq = (cols[31] ? cols[31].trim() : "") || ""; // HQ legend key
+                var hq = (cols[31] ? cols[31].trim() : "") || "";
 
                 if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
 
                 cachedTypes.add(type);
 
                 var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
-
                 var firstLine = caption.split("\n")[0] || "";
                 var unitName = firstLine
                     .replace(/Actual Strength.*/i, "")
@@ -837,7 +888,6 @@
             }
         }
 
-        // ---------- UI HELPERS ----------
         function showLoading(show) {
             loadingScreenEl.style.display = show ? "flex" : "none";
         }
@@ -868,20 +918,12 @@
 
             for (var i = 0; i < cachedRows.length; i++) {
                 var item = cachedRows[i];
-
-                // ✅ FIX: Legend must filter by HQ (item.hq), not item.type
                 var hqKey = (item.hq || "").trim();
 
-                // If select all unchecked and no HQ selected => show nothing
                 if (activeHQ.size === 0) continue;
-
-                // If HQ not selected => hide
                 if (!activeHQ.has(hqKey)) continue;
 
-                // Dropdown filter remains by Unit Type
                 if (selectedType !== "ALL" && item.type !== selectedType) continue;
-
-                // Search filter
                 if (searchText && item.caption.toLowerCase().indexOf(searchText) === -1) continue;
 
                 var color = legendItems[hqKey] || getHQColor(item.hq);
@@ -889,63 +931,36 @@
                 var marker = L.marker([item.lat, item.lon], {
                     icon: createPremiumIcon(color)
                 }).bindPopup(`
-                    <div style="
-                        min-width:260px;
-                        font-family:'Segoe UI';
-                        border-radius:16px;
-                        overflow:hidden;
-                        background:white;
-                        box-shadow:0 14px 34px rgba(0,0,0,0.28);
-                    ">
-                        <div style="
-                            background:linear-gradient(135deg,#0d47a1,#1976d2);
-                            color:white;
-                            padding:12px 14px;
-                            font-weight:900;
-                            font-size:15px;
-                            letter-spacing:.2px;">
-                            ${item.unitName}
-                        </div>
+          <div style="min-width:260px;font-family:'Segoe UI';border-radius:16px;overflow:hidden;background:white;box-shadow:0 14px 34px rgba(0,0,0,0.28);">
+            <div style="background:linear-gradient(135deg,#0d47a1,#1976d2);color:white;padding:12px 14px;font-weight:900;font-size:15px;letter-spacing:.2px;">
+              ${item.unitName}
+            </div>
 
-                        ${item.actualStrength ? `
-                        <div style="padding:10px 14px;background:#e3f2fd;color:#0d47a1;font-size:13px;">
-                            <b>Actual Strength</b><br>${item.actualStrength}
-                        </div>` : ""}
+            ${item.actualStrength ? `
+              <div style="padding:10px 14px;background:#e3f2fd;color:#0d47a1;font-size:13px;">
+                <b>Actual Strength</b><br>${item.actualStrength}
+              </div>` : ""}
 
-                        ${item.availableStrength ? `
-                        <div style="padding:10px 14px;background:#fff3e0;color:#e65100;font-size:13px;">
-                            <b>Available Strength</b><br>${item.availableStrength}
-                        </div>` : ""}
+            ${item.availableStrength ? `
+              <div style="padding:10px 14px;background:#fff3e0;color:#e65100;font-size:13px;">
+                <b>Available Strength</b><br>${item.availableStrength}
+              </div>` : ""}
 
-                        ${item.contact ? `
-                        <div style="padding:10px 14px;background:#f3e5f5;color:#4a148c;font-size:13px;">
-                            📞 <b>${item.contact}</b>
-                        </div>` : ""}
+            ${item.contact ? `
+              <div style="padding:10px 14px;background:#f3e5f5;color:#4a148c;font-size:13px;">
+                📞 <b>${item.contact}</b>
+              </div>` : ""}
 
-                        <div style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
-                            <span style="
-                                background:linear-gradient(135deg,#37474f,#607d8b);
-                                color:white;
-                                padding:5px 10px;
-                                border-radius:14px;
-                                font-size:11px;
-                                font-weight:900;">
-                                ${hqKey || "HQ"}
-                            </span>
-
-                            <span style="
-                                background:linear-gradient(135deg,#3949ab,#1e88e5);
-                                color:white;
-                                padding:5px 12px;
-                                border-radius:14px;
-                                font-size:11px;
-                                font-weight:900;
-                                letter-spacing:.2px;">
-                                ${item.type}
-                            </span>
-                        </div>
-                    </div>
-                `);
+            <div style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="background:linear-gradient(135deg,#37474f,#607d8b);color:white;padding:5px 10px;border-radius:14px;font-size:11px;font-weight:900;">
+                ${hqKey || "HQ"}
+              </span>
+              <span style="background:linear-gradient(135deg,#3949ab,#1e88e5);color:white;padding:5px 12px;border-radius:14px;font-size:11px;font-weight:900;letter-spacing:.2px;">
+                ${item.type}
+              </span>
+            </div>
+          </div>
+        `);
 
                 markers.addLayer(marker);
                 bounds.push([item.lat, item.lon]);
@@ -957,7 +972,6 @@
             }
         }
 
-        // ---------- DEBOUNCE ----------
         function debounce(fn, wait) {
             var t = null;
             return function () {
@@ -971,7 +985,6 @@
             renderMarkersFromCache();
         }, 180);
 
-        // ---------- FETCH + CACHE ----------
         function fetchDataOnceThenRender() {
             showLoading(true);
 
@@ -980,16 +993,6 @@
                 .then(function (tsv) {
                     parseTSVToCache(tsv);
                     fillTypeDropdownOnce();
-
-                    // Ensure legend defaults (if not built yet)
-                    if (activeHQ.size === 0) {
-                        for (var k in legendItems) activeHQ.add(k);
-                        selectAllLegendEl.checked = true;
-                        try {
-                            document.querySelectorAll(".unitShowCheck").forEach(function (cb) { cb.checked = true; });
-                        } catch (e) { }
-                    }
-
                     renderMarkersFromCache();
                     showLoading(false);
                 })
@@ -1012,6 +1015,100 @@
             }, 600000);
         }
 
+        // ---------- GOOGLE PLACES (AUTOCOMPLETE + BUTTON SEARCH) ----------
+        function loadGooglePlacesAfterLogin() {
+            if (googlePlacesLoaded) return;
+            googlePlacesLoaded = true;
+
+            var script = document.createElement("script");
+            script.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(GOOGLE_PLACES_API_KEY) + "&libraries=places";
+            script.async = true;
+            script.defer = true;
+
+            script.onload = function () {
+                initPlacesAutocomplete();
+            };
+
+            document.head.appendChild(script);
+        }
+
+        function initPlacesAutocomplete() {
+            if (!window.google || !google.maps || !google.maps.places) return;
+
+            // Service helpers for "Search" button
+            geocoder = new google.maps.Geocoder();
+
+            // ✅ Use Autocomplete (best for clicking suggestions)
+            autocomplete = new google.maps.places.Autocomplete(pacInputEl, {
+                fields: ["geometry", "name", "formatted_address"]
+            });
+
+            autocomplete.addListener("place_changed", function () {
+                var place = autocomplete.getPlace();
+                if (!place || !place.geometry || !place.geometry.location) return;
+                lastSelectedPlace = place;
+                goToPlace(place.geometry.location.lat(), place.geometry.location.lng(), place.name || place.formatted_address || "Place");
+            });
+
+            // Make sure clear button works
+            clearBtn.onclick = function () {
+                pacInputEl.value = "";
+                clearBtn.style.display = "none";
+                lastSelectedPlace = null;
+                if (searchMarker && map) map.removeLayer(searchMarker);
+            };
+
+            pacInputEl.addEventListener("input", function () {
+                clearBtn.style.display = this.value ? "block" : "none";
+            });
+
+            // ✅ Search button works even without Enter
+            searchBtn.addEventListener("click", function () {
+                runPlaceSearch();
+            });
+
+            // Optional: focus input when pin clicked
+            pinBtn.addEventListener("click", function () {
+                pacInputEl.focus();
+            });
+        }
+
+        function runPlaceSearch() {
+            var q = (pacInputEl.value || "").trim();
+            if (!q) return;
+
+            // If user already selected a suggestion, use it
+            if (lastSelectedPlace && lastSelectedPlace.geometry && lastSelectedPlace.geometry.location) {
+                var loc = lastSelectedPlace.geometry.location;
+                goToPlace(loc.lat(), loc.lng(), lastSelectedPlace.name || q);
+                return;
+            }
+
+            // Otherwise geocode typed text
+            if (!geocoder) return;
+
+            geocoder.geocode({ address: q }, function (results, status) {
+                if (status === "OK" && results && results.length) {
+                    var r = results[0];
+                    if (r.geometry && r.geometry.location) {
+                        goToPlace(r.geometry.location.lat(), r.geometry.location.lng(), r.formatted_address || q);
+                    }
+                } else {
+                    // if geocode fails, try to trigger "Enter" behavior (some browsers)
+                    pacInputEl.focus();
+                }
+            });
+        }
+
+        function goToPlace(lat, lng, label) {
+            if (searchMarker && map) map.removeLayer(searchMarker);
+
+            if (map) {
+                searchMarker = L.marker([lat, lng]).addTo(map).bindPopup(label).openPopup();
+                map.setView([lat, lng], 14);
+            }
+        }
+
         // ---------- INIT AFTER LOGIN ----------
         function initMapAndUIAfterLogin() {
             pageHeaderEl.style.display = "block";
@@ -1019,7 +1116,6 @@
             topBarEl.style.display = "block";
             googleSearchBoxEl.style.display = "flex";
 
-            // build legend with all checked default
             buildLegendPanel();
 
             if (!map) {
@@ -1040,18 +1136,16 @@
                 setTimeout(function () { map.invalidateSize(); }, 300);
             }
 
-            // Bind UI events only once (avoid duplicates on re-login)
             if (!uiEventsBound) {
                 uiEventsBound = true;
 
                 typeFilterEl.addEventListener("change", function () { debouncedRender(); });
                 searchBoxEl.addEventListener("input", function () { debouncedRender(); });
 
-                // Legend events (normal logic, HQ based)
+                // Legend events
                 document.addEventListener("change", function (e) {
                     if (!e.target) return;
 
-                    // Select all
                     if (e.target.id === "selectAllLegend") {
                         var checked = e.target.checked;
 
@@ -1067,12 +1161,10 @@
                         debouncedRender();
                     }
 
-                    // Individual checkbox
                     if (e.target.classList && e.target.classList.contains("unitShowCheck")) {
                         if (e.target.checked) activeHQ.add(e.target.value);
                         else activeHQ.delete(e.target.value);
 
-                        // Update select all state
                         var allChecks = document.querySelectorAll(".unitShowCheck");
                         var allOn = true;
                         allChecks.forEach(function (cb) { if (!cb.checked) allOn = false; });
@@ -1082,65 +1174,28 @@
                     }
                 });
 
-                // Enter key handling (only once)
+                // Enter key: run search (so both enter + click work)
+                pacInputEl.addEventListener("keydown", function (e) {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        runPlaceSearch();
+                    }
+                });
+
+                // Prevent enter in left search box
                 searchBoxEl.addEventListener("keydown", function (e) {
                     if (e.key === "Enter") e.preventDefault();
                 });
-                document.getElementById("pac-input").addEventListener("keydown", function (e) {
-                    if (e.key === "Enter") e.preventDefault();
+
+                // Mobile: fix map resize when orientation change
+                window.addEventListener("resize", function () {
+                    try { if (map) map.invalidateSize(); } catch (e) { }
                 });
             }
 
             loadGooglePlacesAfterLogin();
             fetchDataOnceThenRender();
             startAutoRefresh();
-        }
-
-        // ---------- GOOGLE PLACES ----------
-        function loadGooglePlacesAfterLogin() {
-            if (googlePlacesLoaded) return;
-            googlePlacesLoaded = true;
-
-            var script = document.createElement("script");
-            script.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(GOOGLE_PLACES_API_KEY) + "&libraries=places";
-            script.async = true;
-            script.defer = true;
-
-            script.onload = function () { initPlacesSearchBox(); };
-            document.head.appendChild(script);
-        }
-
-        function initPlacesSearchBox() {
-            if (!window.google || !google.maps || !google.maps.places) return;
-
-            var input = document.getElementById('pac-input');
-            var clearBtn = document.getElementById("clearSearch");
-            var searchBox = new google.maps.places.SearchBox(input);
-
-            clearBtn.onclick = function () {
-                input.value = "";
-                clearBtn.style.display = "none";
-                if (searchMarker && map) map.removeLayer(searchMarker);
-            };
-
-            input.addEventListener("input", function () {
-                clearBtn.style.display = this.value ? "block" : "none";
-            });
-
-            searchBox.addListener('places_changed', function () {
-                var places = searchBox.getPlaces();
-                if (!places || !places.length) return;
-
-                var loc = places[0].geometry.location;
-                var lat = loc.lat();
-                var lng = loc.lng();
-
-                if (searchMarker && map) map.removeLayer(searchMarker);
-                if (map) {
-                    searchMarker = L.marker([lat, lng]).addTo(map).bindPopup(places[0].name).openPopup();
-                    map.setView([lat, lng], 14);
-                }
-            });
         }
 
         // ---------- LOGIN / LOGOUT ----------
@@ -1188,11 +1243,10 @@
             try {
                 typeFilterEl.value = "ALL";
                 searchBoxEl.value = "";
-                document.getElementById("pac-input").value = "";
-                document.getElementById("clearSearch").style.display = "none";
+                pacInputEl.value = "";
+                clearBtn.style.display = "none";
             } catch (e) { }
 
-            // reset legend to defaults
             activeHQ.clear();
             for (var k in legendItems) activeHQ.add(k);
             selectAllLegendEl.checked = true;
@@ -1201,6 +1255,7 @@
             } catch (e) { }
 
             isDataLoadedOnce = false;
+            lastSelectedPlace = null;
         }
 
         // ---------- USER MANAGEMENT ----------
@@ -1276,7 +1331,7 @@
             userPanelModalEl.style.display = "none";
         }
 
-        // ---------- ENTER KEY SUPPORT (Login) ----------
+        // Login enter key
         document.getElementById("username").addEventListener("keydown", function (e) {
             if (e.key === "Enter") login();
         });
@@ -1284,7 +1339,7 @@
             if (e.key === "Enter") login();
         });
 
-        // ---------- AUTO SESSION CHECK ----------
+        // Auto session
         if (sessionStorage.getItem("loggedIn") === "true") {
             var u = sessionStorage.getItem("currentUser") || "admin";
             loggedUserEl.innerText = u;
