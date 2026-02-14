@@ -957,7 +957,15 @@
     var item = cachedRows[i];
     var hqKey = (item.hq || "").trim();
 
+    // 🔥 Safety: if legend not built yet, allow all HQ
+if (activeHQ.size === 0) {
+  for (var k in legendItems) activeHQ.add(k);
+}
+
+
     if (activeHQ.size > 0 && !activeHQ.has(hqKey)) continue;
+
+    
 
     if (selectedType !== "ALL" && item.type !== selectedType) continue;
     if (searchText && item.caption.toLowerCase().indexOf(searchText) === -1) continue;
