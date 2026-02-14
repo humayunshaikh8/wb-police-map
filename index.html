@@ -657,7 +657,7 @@
 
         // ---------- CONFIG ----------
         var GOOGLE_PLACES_API_KEY = "AIzaSyBiP3uf8ZRTvrGB6zsce2iVWj1H_IFnMsg";
-        var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?output=tsv";
+        var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv";
 
         // ---------- ELEMENTS ----------
         var loginScreenEl = document.getElementById("loginScreen");
@@ -749,60 +749,29 @@
             return colors[hq] || "#000000";
         }
 
-        function createPremiumIcon(color, count) {
-
-  var badgeHtml = "";
-
-  if (count && count > 1) {
-    badgeHtml = `
-      <div style="
-        position:absolute;
-        top:-6px;
-        right:-6px;
-        background:#ff1744;
-        color:white;
-        width:20px;
-        height:20px;
-        border-radius:50%;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        font-size:11px;
-        font-weight:900;
-        box-shadow:0 0 6px rgba(0,0,0,0.5);
-      ">
-        ${count}
-      </div>
-    `;
-  }
-
-  return L.divIcon({
-    className: "",
-    html: `
-      <div style="
-        position:relative;
-        width:34px;
-        height:34px;
-      ">
-        <div style="
-          width:34px;
-          height:34px;
-          border-radius:50%;
-          background: radial-gradient(circle at 30% 30%, #ffffff 0%, ${color} 35%, ${color} 65%, rgba(0,0,0,0.25) 100%);
-          border:4px solid rgba(255,255,255,0.98);
-          box-shadow: 0 0 10px ${color}, 0 0 18px ${color}, 0 0 32px rgba(0,0,0,0.55);
-          animation: premiumPulse 1.8s infinite;
-        ">
-        </div>
-
-        ${badgeHtml}
-      </div>
-    `,
-    iconSize: [40, 40],
-    iconAnchor: [20, 20]
-  });
-}
-
+        function createPremiumIcon(color) {
+            return L.divIcon({
+                className: '',
+                html: `
+          <div style="
+            width:34px;height:34px;
+            border-radius:50%;
+            background: radial-gradient(circle at 30% 30%, #ffffff 0%, ${color} 35%, ${color} 65%, rgba(0,0,0,0.25) 100%);
+            border:4px solid rgba(255,255,255,0.98);
+            box-shadow: 0 0 10px ${color}, 0 0 18px ${color}, 0 0 32px rgba(0,0,0,0.55);
+            animation: premiumPulse 1.8s infinite;
+          ">
+            <div style="
+              width:10px;height:10px;border-radius:50%;
+              background: rgba(255,255,255,0.95);
+              position:relative; top:6px; left:7px;
+              box-shadow: 0 0 10px rgba(255,255,255,0.55);
+            "></div>
+          </div>`,
+                iconSize: [38, 38],
+                iconAnchor: [19, 19]
+            });
+        }
 
         // ---------- LEGEND ITEMS (HQ list) ----------
         var legendItems = {
@@ -813,7 +782,7 @@
             "LADY RAF": "#f58231",
             "STRACO": "#911eb4",
             "QRT": "#42d4f4",
-            "WINNERS TEAM": "#f032e6",
+            "WINNERS": "#f032e6",
             "DMG": "#bfef45",
             "HQ": "#fabed4",
             "EF LINES": "#469990",
@@ -868,90 +837,58 @@
 
         // ---------- DATA PARSING ----------
         function parseTSVToCache(tsvText) {
+            cachedRows = [];
+            cachedTypes.clear();
 
-    cachedRows = [];
-    cachedTypes.clear();
+            var rows = tsvText.split("\n");
+            var maxRows = Math.min(rows.length, 4000);
 
-    if (!tsvText) return;
+            for (var i = 1; i < maxRows; i++) {
+                if (!rows[i] || rows[i].trim() === "") continue;
 
-    var rows = tsvText.split("\n");
-    if (rows.length < 2) return;
+                var cols = rows[i].split("\t");
+                if (cols.length < 32) continue;
 
-    var headers = rows[0].split("\t");
+                var type = cols[1] ? cols[1].trim() : "";
+                var caption = cols[28] ? cols[28].trim() : "";
+                var lat = parseFloat(cols[29]);
+                var lon = parseFloat(cols[30]);
+                var hq = (cols[31] ? cols[31].trim() : "") || "";
 
-    // Detect column positions dynamically
-    var nameIndex = headers.indexOf("name");
-    var latIndex = headers.indexOf("lat");
-    var lonIndex = headers.indexOf("lon");
-    var hqIndex = headers.indexOf("hq");
-    var unitTypeIndex = headers.indexOf("Name of Dist./PD/ PC/GRP");
+                if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
 
-    if (nameIndex === -1 || latIndex === -1 || lonIndex === -1 || unitTypeIndex === -1) {
-        console.log("Required columns not found in sheet!");
-        return;
-    }
+                cachedTypes.add(type);
 
-    for (var i = 1; i < rows.length; i++) {
+                var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+                var firstLine = caption.split("\n")[0] || "";
+                var unitName = firstLine
+                    .replace(/Actual Strength.*/i, "")
+                    .replace(/AVAILABLE STRENGTH.*/i, "")
+                    .replace(/Contact No.*/i, "")
+                    .trim();
 
-        if (!rows[i] || rows[i].trim() === "") continue;
+                var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
+                var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
 
-        var cols = rows[i].split("\t");
+                var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
+                var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
 
-        var caption = cols[nameIndex] ? cols[nameIndex].trim() : "";
-        var lat = parseFloat(cols[latIndex]);
-        var lon = parseFloat(cols[lonIndex]);
-        var hq = (hqIndex !== -1 && cols[hqIndex])
-    ? cols[hqIndex].trim().toUpperCase()
-    : "";
+                var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
+                var contact = contactMatch ? contactMatch[1].trim() : "";
 
-        var unitType = cols[unitTypeIndex] ? cols[unitTypeIndex].trim() : "";
-
-        // 🔥 Skip if unit type empty
-        if (!unitType) continue;
-
-        // Skip invalid coordinates
-        if (!caption || isNaN(lat) || isNaN(lon)) continue;
-
-        // Clean text
-        var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
-        var firstLine = caption.split("\n")[0] || "";
-
-        // Extract Unit Name
-        var unitName = firstLine
-            .replace(/Actual Strength.*/i, "")
-            .replace(/AVAILABLE STRENGTH.*/i, "")
-            .replace(/Contact No.*/i, "")
-            .trim();
-
-        // Extract Actual Strength
-        var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
-        var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
-
-        // Extract Available Strength
-        var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
-        var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
-
-        // Extract Contact
-        var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
-        var contact = contactMatch ? contactMatch[1].trim() : "";
-
-        cachedRows.push({
-            type: unitType,        // 🔹 filter uses this
-            caption: caption,
-            lat: lat,
-            lon: lon,
-            hq: hq,
-            unitName: unitName,
-            actualStrength: actualStrength,
-            availableStrength: availableStrength,
-            contact: contact
-        });
-
-        cachedTypes.add(unitType);
-    }
-
-    console.log("Loaded rows:", cachedRows.length);
-}
+                cachedRows.push({
+                    type: type,
+                    caption: caption,
+                    lat: lat,
+                    lon: lon,
+                    hq: hq,
+                    unitName: unitName,
+                    actualStrength: actualStrength,
+                    availableStrength: availableStrength,
+                    contact: contact
+                });
+            }
+        }
 
         function showLoading(show) {
             loadingScreenEl.style.display = show ? "flex" : "none";
@@ -973,176 +910,69 @@
 
         // ---------- RENDER MARKERS ----------
         function renderMarkersFromCache() {
-  if (!map || !markers) return;
+            if (!map || !markers) return;
 
-  markers.clearLayers();
+            markers.clearLayers();
 
-  var selectedType = (typeFilterEl && typeFilterEl.value) ? typeFilterEl.value : "ALL";
-  var searchText = (searchBoxEl && searchBoxEl.value) ? searchBoxEl.value.trim().toLowerCase() : "";
+            var selectedType = typeFilterEl.value || "ALL";
+            var searchText = (searchBoxEl.value || "").trim().toLowerCase();
+            var bounds = [];
 
-  var bounds = [];
+            for (var i = 0; i < cachedRows.length; i++) {
+                var item = cachedRows[i];
+                var hqKey = (item.hq || "").trim();
 
-  // 🔹 STEP 1: GROUP BY LAT-LON
-  var locationMap = {};
-  console.log("Total cached rows:", cachedRows.length);
+                if (activeHQ.size === 0) continue;
+                if (!activeHQ.has(hqKey)) continue;
 
+                if (selectedType !== "ALL" && item.type !== selectedType) continue;
+                if (searchText && item.caption.toLowerCase().indexOf(searchText) === -1) continue;
 
-  for (var i = 0; i < cachedRows.length; i++) {
-    var item = cachedRows[i];
-    var hqKey = (item.hq || "").trim().toUpperCase();
+                var color = legendItems[hqKey] || getHQColor(item.hq);
 
+                var marker = L.marker([item.lat, item.lon], {
+                    icon: createPremiumIcon(color)
+                }).bindPopup(`
+          <div style="min-width:260px;font-family:'Segoe UI';border-radius:16px;overflow:hidden;background:white;box-shadow:0 14px 34px rgba(0,0,0,0.28);">
+            <div style="background:linear-gradient(135deg,#0d47a1,#1976d2);color:white;padding:12px 14px;font-weight:900;font-size:15px;letter-spacing:.2px;">
+              ${item.unitName}
+            </div>
 
-    // 🔥 Safety: if legend not built yet, allow all HQ
-if (activeHQ.size === 0) {
-  for (var k in legendItems) activeHQ.add(k);
-}
+            ${item.actualStrength ? `
+              <div style="padding:10px 14px;background:#e3f2fd;color:#0d47a1;font-size:13px;">
+                <b>Actual Strength</b><br>${item.actualStrength}
+              </div>` : ""}
 
+            ${item.availableStrength ? `
+              <div style="padding:10px 14px;background:#fff3e0;color:#e65100;font-size:13px;">
+                <b>Available Strength</b><br>${item.availableStrength}
+              </div>` : ""}
 
-    // SAFE HQ FILTER (never block all markers)
-if (activeHQ.size > 0) {
-    if (hqKey && !activeHQ.has(hqKey)) {
-        // only skip if HQ exists AND not selected
-        continue;
-    }
-}
+            ${item.contact ? `
+              <div style="padding:10px 14px;background:#f3e5f5;color:#4a148c;font-size:13px;">
+                📞 <b>${item.contact}</b>
+              </div>` : ""}
 
-    
-
-    if (selectedType !== "ALL" && item.type !== selectedType) continue;
-    if (searchText && item.caption.toLowerCase().indexOf(searchText) === -1) continue;
-
-    var key = item.lat + "," + item.lon;
-
-    if (!locationMap[key]) {
-      locationMap[key] = [];
-    }
-
-    locationMap[key].push(item);
-  }
-
-  // 🔹 STEP 2: CREATE ONE MARKER PER LOCATION
-
-  console.log("Grouped locations:", Object.keys(locationMap).length);
-
-  for (var coord in locationMap) {
-
-    var items = locationMap[coord];
-    var first = items[0];
-
-    var lat = first.lat;
-    var lon = first.lon;
-    var hqKey = (first.hq || "").trim().toUpperCase();
-
-    var color = legendItems[hqKey] || getHQColor(first.hq);
-
-    var popupHtml = "";
-
-    // 🔹 STEP 3: BUILD MULTIPLE UNIT LIST
-    if (items.length === 1) {
-
-      popupHtml = buildUnitPopup(items[0]);
-
-    } else {
-
-      popupHtml += `
-        <div style="min-width:280px;font-family:'Segoe UI';">
-          <div style="
-            background:linear-gradient(135deg,#0d47a1,#1976d2);
-            color:white;
-            padding:10px 12px;
-            font-weight:900;
-            font-size:14px;">
-            ${items.length} Units at this Location
+            <div style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="background:linear-gradient(135deg,#37474f,#607d8b);color:white;padding:5px 10px;border-radius:14px;font-size:11px;font-weight:900;">
+                ${hqKey || "HQ"}
+              </span>
+              <span style="background:linear-gradient(135deg,#3949ab,#1e88e5);color:white;padding:5px 12px;border-radius:14px;font-size:11px;font-weight:900;letter-spacing:.2px;">
+                ${item.type}
+              </span>
+            </div>
           </div>
-          <div style="padding:10px;">
-      `;
+        `);
 
-      for (var j = 0; j < items.length; j++) {
-        popupHtml += `
-          <div style="
-            margin-bottom:8px;
-            padding:8px;
-            border-radius:10px;
-            background:#f5f5f5;
-            cursor:pointer;
-          "
-          onclick="showSingleUnitPopup(${lat},${lon},${j})">
-            ${escapeHtml(items[j].unitName)}
-          </div>
-        `;
-      }
+                markers.addLayer(marker);
+                bounds.push([item.lat, item.lon]);
+            }
 
-      popupHtml += `
-          </div>
-        </div>
-      `;
-    }
-
-    var marker = L.marker([lat, lon], {
-  icon: createPremiumIcon(color, items.length)
-})
-.bindPopup(popupHtml);
-
-    marker._multiUnits = items; // store all units in marker
-
-    markers.addLayer(marker);
-    bounds.push([lat, lon]);
-  }
-
-  if (bounds.length > 0) {
-    map.fitBounds(bounds, { padding: [30, 30] });
-}
-
-
-function buildUnitPopup(item) {
-  var hqKey = (item.hq || "").trim();
-
-  return `
-    <div style="min-width:260px;font-family:'Segoe UI';border-radius:16px;overflow:hidden;background:white;">
-      <div style="background:linear-gradient(135deg,#0d47a1,#1976d2);color:white;padding:12px 14px;font-weight:900;">
-        ${escapeHtml(item.unitName)}
-      </div>
-
-      ${item.actualStrength ? `
-        <div style="padding:10px 14px;background:#e3f2fd;color:#0d47a1;font-size:13px;">
-          <b>Actual Strength</b><br>${escapeHtml(item.actualStrength)}
-        </div>` : ""}
-
-      ${item.availableStrength ? `
-        <div style="padding:10px 14px;background:#fff3e0;color:#e65100;font-size:13px;">
-          <b>Available Strength</b><br>${escapeHtml(item.availableStrength)}
-        </div>` : ""}
-
-      ${item.contact ? `
-        <div style="padding:10px 14px;background:#f3e5f5;color:#4a148c;font-size:13px;">
-          📞 <b>${escapeHtml(item.contact)}</b>
-        </div>` : ""}
-    </div>
-  `;
-}
-
-
-window.showSingleUnitPopup = function(lat, lon, index) {
-
-  markers.eachLayer(function(layer){
-
-    var ll = layer.getLatLng();
-
-    if (
-      Math.abs(ll.lat - lat) < 0.000001 &&
-      Math.abs(ll.lng - lon) < 0.000001
-    ) {
-
-      var items = layer._multiUnits;
-
-      if (items && items[index]) {
-        layer.setPopupContent(buildUnitPopup(items[index]));
-        layer.openPopup();
-      }
-    }
-  });
-
-};
+            if (!isDataLoadedOnce && bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [30, 30] });
+                isDataLoadedOnce = true;
+            }
+        }
 
         function debounce(fn, wait) {
             var t = null;
