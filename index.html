@@ -996,7 +996,7 @@ if (activeHQ.size === 0) {
 }
 
 
-    if (activeHQ.size > 0 && legendItems[hqKey] && !activeHQ.has(hqKey)) continue;
+    if (activeHQ.size > 0 && hqKey && !activeHQ.has(hqKey)) continue;
 
 
     
@@ -1021,7 +1021,8 @@ if (activeHQ.size === 0) {
 
     var lat = first.lat;
     var lon = first.lon;
-    var hqKey = (first.hq || "").trim();
+    var hqKey = (first.hq || "").trim().toUpperCase();
+
     var color = legendItems[hqKey] || getHQColor(first.hq);
 
     var popupHtml = "";
