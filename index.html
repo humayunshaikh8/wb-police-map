@@ -869,11 +869,16 @@
         // ---------- DATA PARSING ----------
         function parseTSVToCache(tsvText) {
 
+    // Reset cache
     cachedRows = [];
+    cachedTypes.clear();
+
+    if (!tsvText) return;
 
     var rows = tsvText.split("\n");
     if (rows.length < 2) return;
 
+    // Detect headers dynamically
     var headers = rows[0].split("\t");
 
     var nameIndex = headers.indexOf("name");
@@ -899,58 +904,47 @@
         var hq = (hqIndex !== -1 && cols[hqIndex]) ? cols[hqIndex].trim() : "";
         var show = (showIndex !== -1 && cols[showIndex]) ? cols[showIndex].trim() : "Y";
 
+        // Only show rows marked Y
         if (show !== "Y") continue;
+
         if (!caption || isNaN(lat) || isNaN(lon)) continue;
 
+        // Extract structured info from caption text
+        var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+        var firstLine = caption.split("\n")[0] || "";
+
+        var unitName = firstLine
+            .replace(/Actual Strength.*/i, "")
+            .replace(/AVAILABLE STRENGTH.*/i, "")
+            .replace(/Contact No.*/i, "")
+            .trim();
+
+        var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
+        var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
+
+        var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
+        var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
+
+        var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
+        var contact = contactMatch ? contactMatch[1].trim() : "";
+
         cachedRows.push({
+            type: "UNIT",
             caption: caption,
-            unitName: caption,
             lat: lat,
             lon: lon,
             hq: hq,
-            type: "UNIT"
+            unitName: unitName,
+            actualStrength: actualStrength,
+            availableStrength: availableStrength,
+            contact: contact
         });
+
+        cachedTypes.add("UNIT");
     }
 
     console.log("Loaded rows:", cachedRows.length);
 }
-
-
-
-                if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
-
-                cachedTypes.add(type);
-
-                var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
-                var firstLine = caption.split("\n")[0] || "";
-                var unitName = firstLine
-                    .replace(/Actual Strength.*/i, "")
-                    .replace(/AVAILABLE STRENGTH.*/i, "")
-                    .replace(/Contact No.*/i, "")
-                    .trim();
-
-                var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
-                var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
-
-                var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
-                var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
-
-                var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
-                var contact = contactMatch ? contactMatch[1].trim() : "";
-
-                cachedRows.push({
-                    type: type,
-                    caption: caption,
-                    lat: lat,
-                    lon: lon,
-                    hq: hq,
-                    unitName: unitName,
-                    actualStrength: actualStrength,
-                    availableStrength: availableStrength,
-                    contact: contact
-                });
-            }
-        }
 
         function showLoading(show) {
             loadingScreenEl.style.display = show ? "flex" : "none";
