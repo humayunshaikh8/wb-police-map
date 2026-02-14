@@ -998,8 +998,13 @@ if (activeHQ.size === 0) {
 }
 
 
-    if (activeHQ.size > 0 && hqKey && !activeHQ.has(hqKey)) continue;
-
+    // SAFE HQ FILTER (never block all markers)
+if (activeHQ.size > 0) {
+    if (hqKey && !activeHQ.has(hqKey)) {
+        // only skip if HQ exists AND not selected
+        continue;
+    }
+}
 
     
 
@@ -1084,11 +1089,10 @@ if (activeHQ.size === 0) {
     bounds.push([lat, lon]);
   }
 
-  if (!isDataLoadedOnce && bounds.length > 0) {
+  if (bounds.length > 0) {
     map.fitBounds(bounds, { padding: [30, 30] });
-    isDataLoadedOnce = true;
-  }
 }
+
 
 function buildUnitPopup(item) {
   var hqKey = (item.hq || "").trim();
