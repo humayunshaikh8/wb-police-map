@@ -869,7 +869,6 @@
         // ---------- DATA PARSING ----------
         function parseTSVToCache(tsvText) {
 
-    // Reset cache
     cachedRows = [];
     cachedTypes.clear();
 
@@ -878,16 +877,16 @@
     var rows = tsvText.split("\n");
     if (rows.length < 2) return;
 
-    // Detect headers dynamically
     var headers = rows[0].split("\t");
 
+    // Detect column positions dynamically
     var nameIndex = headers.indexOf("name");
     var latIndex = headers.indexOf("lat");
     var lonIndex = headers.indexOf("lon");
     var hqIndex = headers.indexOf("hq");
-    var showIndex = headers.indexOf("show");
+    var unitTypeIndex = headers.indexOf("Name of Dist./PD/ PC/GRP");
 
-    if (nameIndex === -1 || latIndex === -1 || lonIndex === -1) {
+    if (nameIndex === -1 || latIndex === -1 || lonIndex === -1 || unitTypeIndex === -1) {
         console.log("Required columns not found in sheet!");
         return;
     }
@@ -902,34 +901,39 @@
         var lat = parseFloat(cols[latIndex]);
         var lon = parseFloat(cols[lonIndex]);
         var hq = (hqIndex !== -1 && cols[hqIndex]) ? cols[hqIndex].trim() : "";
-        var show = (showIndex !== -1 && cols[showIndex]) ? cols[showIndex].trim() : "Y";
+        var unitType = cols[unitTypeIndex] ? cols[unitTypeIndex].trim() : "";
 
-        // Only show rows marked Y
-        if (show !== "Y") continue;
+        // 🔥 Skip if unit type empty
+        if (!unitType) continue;
 
+        // Skip invalid coordinates
         if (!caption || isNaN(lat) || isNaN(lon)) continue;
 
-        // Extract structured info from caption text
+        // Clean text
         var fullText = caption.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
         var firstLine = caption.split("\n")[0] || "";
 
+        // Extract Unit Name
         var unitName = firstLine
             .replace(/Actual Strength.*/i, "")
             .replace(/AVAILABLE STRENGTH.*/i, "")
             .replace(/Contact No.*/i, "")
             .trim();
 
+        // Extract Actual Strength
         var actualMatch = fullText.match(/Actual Strength\s*---\s*(.*?)(AVAILABLE STRENGTH|Contact No|$)/i);
         var actualStrength = actualMatch ? actualMatch[1].replace(/,\s*$/, "").trim() : "";
 
+        // Extract Available Strength
         var availableMatch = fullText.match(/AVAILABLE STRENGTH\s*---\s*(.*?)(Contact No|$)/i);
         var availableStrength = availableMatch ? availableMatch[1].replace(/,\s*$/, "").trim() : "";
 
+        // Extract Contact
         var contactMatch = fullText.match(/Contact No[:\-]*\s*(.*)$/i);
         var contact = contactMatch ? contactMatch[1].trim() : "";
 
         cachedRows.push({
-            type: "UNIT",
+            type: unitType,        // 🔹 filter uses this
             caption: caption,
             lat: lat,
             lon: lon,
@@ -940,7 +944,7 @@
             contact: contact
         });
 
-        cachedTypes.add("UNIT");
+        cachedTypes.add(unitType);
     }
 
     console.log("Loaded rows:", cachedRows.length);
