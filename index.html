@@ -657,7 +657,7 @@
 
         // ---------- CONFIG ----------
         var GOOGLE_PLACES_API_KEY = "AIzaSyBiP3uf8ZRTvrGB6zsce2iVWj1H_IFnMsg";
-        var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?gid=0&single=true&output=tsv";
+        var sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQws1aF25SY9EK4d2o455DnhKd136BwBn7jhJ_PP4L6lLDU1j9cRiLyZf0ilCaeH0D1mz8RgwQoLV9k/pub?output=tsv";
 
         // ---------- ELEMENTS ----------
         var loginScreenEl = document.getElementById("loginScreen");
@@ -881,10 +881,10 @@
                 if (cols.length < 32) continue;
 
                 var type = cols[1] ? cols[1].trim() : "";
-                var caption = cols[29] ? cols[29].trim() : "";
-                var lat = parseFloat(cols[30]);
-                var lon = parseFloat(cols[1]);
-                var hq = (cols[32] ? cols[32].trim() : "") || "";
+                var caption = cols[28] ? cols[28].trim() : "";
+                var lat = parseFloat(cols[29]);
+                var lon = parseFloat(cols[30]);
+                var hq = (cols[31] ? cols[31].trim() : "") || "";
 
                 if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
 
