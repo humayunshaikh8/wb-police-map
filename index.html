@@ -872,19 +872,50 @@
             cachedTypes.clear();
 
             var rows = tsvText.split("\n");
-            var maxRows = Math.min(rows.length, 4000);
+if (rows.length < 2) return;
 
-            for (var i = 1; i < maxRows; i++) {
-                if (!rows[i] || rows[i].trim() === "") continue;
+var headers = rows[0].split("\t");
 
-                var cols = rows[i].split("\t");
-                if (cols.length < 32) continue;
+// 🔎 detect column positions dynamically
+var nameIndex = headers.indexOf("name");
+var latIndex = headers.indexOf("lat");
+var lonIndex = headers.indexOf("lon");
+var hqIndex = headers.indexOf("hq");
+var showIndex = headers.indexOf("show");
 
-                var type = cols[1] ? cols[1].trim() : "";
-                var caption = cols[28] ? cols[28].trim() : "";
-                var lat = parseFloat(cols[29]);
-                var lon = parseFloat(cols[30]);
-                var hq = (cols[31] ? cols[31].trim() : "") || "";
+// Safety check
+if (nameIndex === -1 || latIndex === -1 || lonIndex === -1) {
+    console.log("Required columns not found in sheet!");
+    return;
+}
+
+for (var i = 1; i < rows.length; i++) {
+
+    if (!rows[i] || rows[i].trim() === "") continue;
+
+    var cols = rows[i].split("\t");
+
+    var caption = cols[nameIndex] ? cols[nameIndex].trim() : "";
+    var lat = parseFloat(cols[latIndex]);
+    var lon = parseFloat(cols[lonIndex]);
+    var hq = (hqIndex !== -1 && cols[hqIndex]) ? cols[hqIndex].trim() : "";
+    var show = (showIndex !== -1 && cols[showIndex]) ? cols[showIndex].trim() : "Y";
+
+    // only show rows marked Y
+    if (show !== "Y") continue;
+
+    if (!caption || isNaN(lat) || isNaN(lon)) continue;
+
+    cachedRows.push({
+        caption: caption,
+        unitName: caption,
+        lat: lat,
+        lon: lon,
+        hq: hq,
+        type: "UNIT"
+    });
+}
+
 
                 if (!type || !caption || isNaN(lat) || isNaN(lon)) continue;
 
