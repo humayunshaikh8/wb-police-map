@@ -900,7 +900,10 @@
         var caption = cols[nameIndex] ? cols[nameIndex].trim() : "";
         var lat = parseFloat(cols[latIndex]);
         var lon = parseFloat(cols[lonIndex]);
-        var hq = (hqIndex !== -1 && cols[hqIndex]) ? cols[hqIndex].trim() : "";
+        var hq = (hqIndex !== -1 && cols[hqIndex])
+    ? cols[hqIndex].trim().toUpperCase()
+    : "";
+
         var unitType = cols[unitTypeIndex] ? cols[unitTypeIndex].trim() : "";
 
         // 🔥 Skip if unit type empty
@@ -984,7 +987,8 @@
 
   for (var i = 0; i < cachedRows.length; i++) {
     var item = cachedRows[i];
-    var hqKey = (item.hq || "").trim();
+    var hqKey = (item.hq || "").trim().toUpperCase();
+
 
     // 🔥 Safety: if legend not built yet, allow all HQ
 if (activeHQ.size === 0) {
@@ -992,7 +996,8 @@ if (activeHQ.size === 0) {
 }
 
 
-    if (activeHQ.size > 0 && !activeHQ.has(hqKey)) continue;
+    if (activeHQ.size > 0 && legendItems[hqKey] && !activeHQ.has(hqKey)) continue;
+
 
     
 
