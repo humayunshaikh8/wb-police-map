@@ -957,8 +957,8 @@
     var item = cachedRows[i];
     var hqKey = (item.hq || "").trim();
 
-    if (activeHQ.size === 0) continue;
-    if (!activeHQ.has(hqKey)) continue;
+    if (activeHQ.size > 0 && !activeHQ.has(hqKey)) continue;
+
     if (selectedType !== "ALL" && item.type !== selectedType) continue;
     if (searchText && item.caption.toLowerCase().indexOf(searchText) === -1) continue;
 
