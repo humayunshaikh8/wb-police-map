@@ -984,6 +984,8 @@
 
   // 🔹 STEP 1: GROUP BY LAT-LON
   var locationMap = {};
+  console.log("Total cached rows:", cachedRows.length);
+
 
   for (var i = 0; i < cachedRows.length; i++) {
     var item = cachedRows[i];
@@ -1014,6 +1016,9 @@ if (activeHQ.size === 0) {
   }
 
   // 🔹 STEP 2: CREATE ONE MARKER PER LOCATION
+
+  console.log("Grouped locations:", Object.keys(locationMap).length);
+
   for (var coord in locationMap) {
 
     var items = locationMap[coord];
