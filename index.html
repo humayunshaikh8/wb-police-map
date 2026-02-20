@@ -841,7 +841,7 @@
             cachedTypes.clear();
 
             var rows = tsvText.split("\n");
-            var maxRows = Math.min(rows.length, 4000);
+            var maxRows = Math.min(rows.length, 5000);
 
             for (var i = 1; i < maxRows; i++) {
                 if (!rows[i] || rows[i].trim() === "") continue;
