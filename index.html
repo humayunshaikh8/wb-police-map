@@ -497,57 +497,18 @@
   box-shadow: 0 8px 18px rgba(0,0,0,0.35);
 }
 
-/* ---------- Ultra premium white floating labels for boundaries ---------- */
-
-/* Target leaflet's tooltip that also has our custom class */
-.leaflet-tooltip.premium-boundary-float {
-    /* no background box */
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    pointer-events: none;           /* allow clicking map under the label */
-    white-space: nowrap;
-}
-
-/* The text itself — larger, bold, high-contrast, compact spacing */
-.leaflet-tooltip.premium-boundary-float .leaflet-tooltip-content,
-.leaflet-tooltip.premium-boundary-float {
-    color: rgba(255,255,255,0.98);
-    font-weight: 900;
-    font-size: 15px;                /* tweak 14-18px as you like */
-    letter-spacing: 0.8px;
+.premium-boundary-label {
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(6px);
+    border: none;
+    color: #111;
+    font-weight: 800;
+    font-size: 14px;
+    padding: 4px 12px;
+    border-radius: 14px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
     text-transform: uppercase;
-    line-height: 1;
-    padding: 2px 6px;
-    display: inline-block;
-    text-align: center;
-
-    /* soft halo for readability on any basemap */
-    text-shadow:
-      0 1px 0 rgba(0,0,0,0.55),
-      0 4px 12px rgba(0,0,0,0.45);
-
-    /* subtle thin outline helps legibility on very bright areas */
-    -webkit-text-stroke: 0.6px rgba(0,0,0,0.18);
-}
-
-/* Make sure tooltip container doesn't add its own arrow/box styling */
-.leaflet-tooltip.premium-boundary-float.leaflet-tooltip-top:before,
-.leaflet-tooltip.premium-boundary-float.leaflet-tooltip-bottom:before,
-.leaflet-tooltip.premium-boundary-float.leaflet-tooltip-left:before,
-.leaflet-tooltip.premium-boundary-float.leaflet-tooltip-right:before {
-    display: none !important;
-}
-
-/* Slight scaling on higher zooms (optional) — keeps label visible/responsive */
-@media (min-resolution: 2dppx), (min-width: 1200px) {
-  .leaflet-tooltip.premium-boundary-float .leaflet-tooltip-content,
-  .leaflet-tooltip.premium-boundary-float {
-      font-size: 16px;
-      -webkit-text-stroke: 0.7px rgba(0,0,0,0.18);
-  }
+    letter-spacing: 0.6px;
 }
 
 
@@ -1239,7 +1200,7 @@
                 map = L.map('map', { zoomControl: true }).setView([23.5, 87.5], 7);
 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '©️ OpenStreetMap',
+                    attribution: '© OpenStreetMap',
                     maxZoom: 19
                 }).addTo(map);
             
@@ -1286,23 +1247,19 @@ if (!boundaryLayer) {
           const districtName =
     feature.properties?.pd_name || "Boundary";
 
-          var labelPoint;
-
-if (layer.getBounds) {
-    labelPoint = layer.getBounds().getCenter();
-} else if (layer.getLatLng) {
-    labelPoint = layer.getLatLng();
-}
-
-if (labelPoint) {
-    layer.bindTooltip(districtName || "Boundary", {
-        permanent: true,
-        direction: "center",
-        className: "premium-boundary-float",
-        opacity: 1,
-        interactive: false
-    }).setLatLng(labelPoint);
-}
+          layer.bindTooltip(
+            `<div style="
+                font-weight:900;
+                font-size:13px;
+                letter-spacing:0.5px;">
+                ${districtName}
+             </div>`,
+            {
+              permanent: true,
+              direction: "center",
+              className: "premiumLabel"
+            }
+          );
 
           layer.on({
             mouseover: function(e) {
