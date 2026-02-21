@@ -485,6 +485,18 @@
             box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16) !important;
         }
 
+        .premiumLabel {
+  background: linear-gradient(135deg,#0d47a1,#1976d2);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 14px;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+}
+
         /* ✅ MOBILE COMPATIBLE MODE */
         @media (max-width: 900px) {
             .filterBox {
@@ -553,6 +565,7 @@
             .loginBox {
                 width: calc(100vw - 40px);
             }
+            
         }
     </style>
 </head>
@@ -600,6 +613,22 @@
             <button class="placeIconBtn" id="searchBtn" title="Search" type="button">🔎</button>
             <span id="clearSearch" title="Clear">✖</span>
         </div>
+
+        <div style="margin-top:10px;">
+  <button id="toggleBoundary"
+    style="
+      background:linear-gradient(135deg,#00bcd4,#1e88e5);
+      color:white;
+      border:none;
+      padding:8px 14px;
+      border-radius:20px;
+      font-weight:900;
+      cursor:pointer;
+      box-shadow:0 8px 18px rgba(0,0,0,0.25);
+    ">
+    🗺 Boundary Layer
+  </button>
+</div>
 
         <!-- Legend panel -->
         <div class="legend" id="legendPanel">
@@ -698,6 +727,8 @@
         var map = null;
         var markers = null;
         var searchMarker = null;
+        var boundaryLayer = null;
+        var polygonVisible = true;
 
         // Cached data
         var cachedRows = [];
@@ -972,6 +1003,10 @@
                 map.fitBounds(bounds, { padding: [30, 30] });
                 isDataLoadedOnce = true;
             }
+            if (markers) {
+    markers.bringToFront();
+    
+}
         }
 
         function debounce(fn, wait) {
@@ -1111,6 +1146,22 @@
             }
         }
 
+        function getPolygonColor(index) {
+  const colors = [
+    "#ff1744",
+    "#00e5ff",
+    "#00e676",
+    "#ff9100",
+    "#7c4dff",
+    "#ffd600",
+    "#f50057",
+    "#00b0ff",
+    "#64dd17",
+    "#ff6d00"
+  ];
+  return colors[index % colors.length];
+}
+
         // ---------- INIT AFTER LOGIN ----------
         function initMapAndUIAfterLogin() {
             pageHeaderEl.style.display = "block";
@@ -1127,6 +1178,7 @@
                     attribution: '© OpenStreetMap',
                     maxZoom: 19
                 }).addTo(map);
+            
 
                 markers = L.markerClusterGroup({
                     disableClusteringAtZoom: 13,
@@ -1134,6 +1186,114 @@
                     showCoverageOnHover: false
                 });
                 map.addLayer(markers);
+
+                // ---------- PREMIUM POLYGON LAYER ----------
+
+
+// ---------- PREMIUM POLYGON LAYER ----------
+// ---------- PREMIUM POLYGON LAYER ----------
+if (!boundaryLayer) {
+
+  fetch("data/boundary.geojson")
+    .then(res => res.json())
+    .then(data => {
+
+      let colorIndex = 0;
+
+      boundaryLayer = L.geoJSON(data, {
+
+        style: function(feature) {
+
+          if (!feature.properties._color) {
+            feature.properties._color = getPolygonColor(colorIndex++);
+          }
+
+          return {
+            color: feature.properties._color,
+            weight: 4,
+            fillColor: feature.properties._color,
+            fillOpacity: 0.22,
+            dashArray: null
+          };
+        },
+
+        onEachFeature: function(feature, layer) {
+
+          const districtName =
+            feature.properties?.DISTRICT ||
+            feature.properties?.District ||
+            feature.properties?.NAME ||
+            feature.properties?.name ||
+            "Boundary";
+
+          layer.bindTooltip(
+            `<div style="
+                font-weight:900;
+                font-size:13px;
+                letter-spacing:0.5px;">
+                ${districtName}
+             </div>`,
+            {
+              permanent: true,
+              direction: "center",
+              className: "premiumLabel"
+            }
+          );
+
+          layer.on({
+            mouseover: function(e) {
+              e.target.setStyle({
+                weight: 6,
+                fillOpacity: 0.35
+              });
+            },
+            mouseout: function(e) {
+              boundaryLayer.resetStyle(e.target);
+            }
+          });
+
+        }
+
+      }).addTo(map);
+
+      // ✅ IMPORTANT: move these inside here
+      boundaryLayer.bringToBack();
+      if (markers) {
+    markers.bringToFront();
+}
+      
+
+      map.fitBounds(boundaryLayer.getBounds());
+
+    })
+    .catch(err => {
+      console.error("Boundary load error:", err);
+    });
+}
+
+    
+
+  var toggleBtn = document.getElementById("toggleBoundary");
+
+if (toggleBtn) {
+  toggleBtn.addEventListener("click", function() {
+
+    if (!boundaryLayer) return;
+
+    if (polygonVisible) {
+      map.removeLayer(boundaryLayer);
+      polygonVisible = false;
+      toggleBtn.style.background =
+        "linear-gradient(135deg,#757575,#9e9e9e)";
+    } else {
+      map.addLayer(boundaryLayer);
+      polygonVisible = true;
+      toggleBtn.style.background =
+        "linear-gradient(135deg,#00bcd4,#1e88e5)";
+    }
+
+  });
+}
 
                 setTimeout(function () { map.invalidateSize(); }, 300);
             }
