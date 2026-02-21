@@ -1295,7 +1295,7 @@ if (toggleBtn && !toggleBtn.dataset.bound) {
 
             if (!boundaryLayer) {
 
-  fetch("data/boundary.geojson")
+  fetch("./data/boundary.geojson")
     .then(res => {
       if (!res.ok) throw new Error("HTTP " + res.status);
       return res.json();
