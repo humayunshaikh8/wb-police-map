@@ -497,28 +497,57 @@
   box-shadow: 0 8px 18px rgba(0,0,0,0.35);
 }
 
-.premium-boundary-label {
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+/* ---------- Ultra premium white floating labels for boundaries ---------- */
 
-    color: #0b2f6f;
+/* Target leaflet's tooltip that also has our custom class */
+.leaflet-tooltip.premium-boundary-float {
+    /* no background box */
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    pointer-events: none;           /* allow clicking map under the label */
+    white-space: nowrap;
+}
+
+/* The text itself — larger, bold, high-contrast, compact spacing */
+.leaflet-tooltip.premium-boundary-float .leaflet-tooltip-content,
+.leaflet-tooltip.premium-boundary-float {
+    color: rgba(255,255,255,0.98);
     font-weight: 900;
-    font-size: 15px;
-
-    padding: 6px 16px;
-    border-radius: 18px;
-
-    border: 1px solid rgba(255,255,255,0.45);
-
-    box-shadow: 
-        0 10px 28px rgba(0,0,0,0.30),
-        0 2px 6px rgba(0,0,0,0.15);
-
+    font-size: 15px;                /* tweak 14-18px as you like */
+    letter-spacing: 0.8px;
     text-transform: uppercase;
-    letter-spacing: 1px;
-
+    line-height: 1;
+    padding: 2px 6px;
+    display: inline-block;
     text-align: center;
+
+    /* soft halo for readability on any basemap */
+    text-shadow:
+      0 1px 0 rgba(0,0,0,0.55),
+      0 4px 12px rgba(0,0,0,0.45);
+
+    /* subtle thin outline helps legibility on very bright areas */
+    -webkit-text-stroke: 0.6px rgba(0,0,0,0.18);
+}
+
+/* Make sure tooltip container doesn't add its own arrow/box styling */
+.leaflet-tooltip.premium-boundary-float.leaflet-tooltip-top:before,
+.leaflet-tooltip.premium-boundary-float.leaflet-tooltip-bottom:before,
+.leaflet-tooltip.premium-boundary-float.leaflet-tooltip-left:before,
+.leaflet-tooltip.premium-boundary-float.leaflet-tooltip-right:before {
+    display: none !important;
+}
+
+/* Slight scaling on higher zooms (optional) — keeps label visible/responsive */
+@media (min-resolution: 2dppx), (min-width: 1200px) {
+  .leaflet-tooltip.premium-boundary-float .leaflet-tooltip-content,
+  .leaflet-tooltip.premium-boundary-float {
+      font-size: 16px;
+      -webkit-text-stroke: 0.7px rgba(0,0,0,0.18);
+  }
 }
 
 
@@ -1247,26 +1276,31 @@ if (!boundaryLayer) {
             color: feature.properties._color,
             weight: 4,
             fillColor: feature.properties._color,
-            fillOpacity: 0.22,
-            dashArray: null
+            fillOpacity: 0.22
           };
         },
 
         onEachFeature: function(feature, layer) {
 
           const districtName =
-    feature.properties?.pd_name || "Boundary";
+            feature.properties?.pd_name || "Boundary";
 
-          layer.bindTooltip(
-  `<div class="premium-boundary-label">
-      ${districtName}
-   </div>`,
-  {
-    permanent: true,
-    direction: "center",
-    className: ""
-  }
-);
+          var labelPoint;
+
+          if (layer.getBounds) {
+              labelPoint = layer.getBounds().getCenter();
+          } else if (layer.getLatLng) {
+              labelPoint = layer.getLatLng();
+          }
+
+          if (labelPoint) {
+              layer.bindTooltip(districtName, {
+                  permanent: true,
+                  direction: "center",
+                  className: "premium-boundary-float",
+                  interactive: false
+              }).setLatLng(labelPoint);
+          }
 
           layer.on({
             mouseover: function(e) {
@@ -1284,20 +1318,44 @@ if (!boundaryLayer) {
 
       }).addTo(map);
 
-      // ✅ IMPORTANT: move these inside here
       boundaryLayer.bringToBack();
-      if (markers) {
-    markers.bringToFront();
-}
-      
+      if (markers) markers.bringToFront();
 
-      map.fitBounds(boundaryLayer.getBounds());
+      if (map.getZoom() < 8) {
+        boundaryLayer.eachLayer(function(layer){
+          if (layer.getTooltip()) layer.closeTooltip();
+        });
+      }
+
+      map.off("zoomend");
+
+      map.on("zoomend", function () {
+
+        if (!boundaryLayer || !polygonVisible) return;
+
+        var currentZoom = map.getZoom();
+
+        boundaryLayer.eachLayer(function (layer) {
+
+          if (!layer.getTooltip()) return;
+
+          if (currentZoom < 8) {
+            layer.closeTooltip();
+          } else {
+            layer.openTooltip();
+          }
+
+        });
+
+      });
 
     })
     .catch(err => {
       console.error("Boundary load error:", err);
     });
+
 }
+    
 
     
 
