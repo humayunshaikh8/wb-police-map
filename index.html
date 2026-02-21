@@ -485,16 +485,30 @@
             box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16) !important;
         }
 
-        .premiumLabel {
-  background: linear-gradient(135deg,#0d47a1,#1976d2);
-  color: white;
-  padding: 6px 10px;
-  border-radius: 14px;
-  font-weight: 900;
-  font-size: 13px;
-  letter-spacing: 0.5px;
-  border: 1px solid rgba(255,255,255,0.4);
-  box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+        /* ULTRA PREMIUM TRANSPARENT FLOATING PD LABEL */
+
+.leaflet-tooltip.premium-boundary-float {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+.leaflet-tooltip.premium-boundary-float::before {
+    display: none !important;
+}
+
+.premium-boundary-float {
+    color: #ffffff;
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-align: center;
+    text-shadow:
+        0 2px 6px rgba(0,0,0,0.85),
+        0 0 8px rgba(0,0,0,0.6);
+    pointer-events: none;
 }
 
 .premium-boundary-label {
@@ -1247,19 +1261,15 @@ if (!boundaryLayer) {
           const districtName =
     feature.properties?.pd_name || "Boundary";
 
-          layer.bindTooltip(
-            `<div style="
-                font-weight:900;
-                font-size:13px;
-                letter-spacing:0.5px;">
-                ${districtName}
-             </div>`,
-            {
-              permanent: true,
-              direction: "center",
-              className: "premiumLabel"
-            }
-          );
+          var labelPoint = layer.getBounds().getCenter();
+
+layer.bindTooltip(districtName, {
+    permanent: true,
+    direction: "center",
+    className: "premium-boundary-float",
+    opacity: 1,
+    interactive: false
+}).setLatLng(labelPoint);
 
           layer.on({
             mouseover: function(e) {
@@ -1285,6 +1295,19 @@ if (!boundaryLayer) {
       
 
       map.fitBounds(boundaryLayer.getBounds());
+      map.on("zoomend", function () {
+    var currentZoom = map.getZoom();
+
+    boundaryLayer.eachLayer(function (layer) {
+        if (!layer.getTooltip()) return;
+
+        if (currentZoom < 8) {
+            layer.closeTooltip();
+        } else {
+            layer.openTooltip();
+        }
+    });
+});
 
     })
     .catch(err => {
