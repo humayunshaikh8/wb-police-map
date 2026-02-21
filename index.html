@@ -497,6 +497,31 @@
   box-shadow: 0 8px 18px rgba(0,0,0,0.35);
 }
 
+.premium-boundary-label {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    color: #0b2f6f;
+    font-weight: 900;
+    font-size: 15px;
+
+    padding: 6px 16px;
+    border-radius: 18px;
+
+    border: 1px solid rgba(255,255,255,0.45);
+
+    box-shadow: 
+        0 10px 28px rgba(0,0,0,0.30),
+        0 2px 6px rgba(0,0,0,0.15);
+
+    text-transform: uppercase;
+    letter-spacing: 1px;
+
+    text-align: center;
+}
+
+
         /* ✅ MOBILE COMPATIBLE MODE */
         @media (max-width: 900px) {
             .filterBox {
@@ -617,7 +642,7 @@
         <div style="margin-top:10px;">
   <button id="toggleBoundary"
     style="
-      background:linear-gradient(135deg,#00bcd4,#1e88e5);
+      background:linear-gradient(135deg,#00bcd4,#1684e3);
       color:white;
       border:none;
       padding:8px 14px;
@@ -626,7 +651,7 @@
       cursor:pointer;
       box-shadow:0 8px 18px rgba(0,0,0,0.25);
     ">
-    🗺 Boundary Layer
+    🗺 PD Boundary
   </button>
 </div>
 
@@ -1146,6 +1171,16 @@
             }
         }
 
+        function getRandomColor() {
+    const colors = [
+        "#E53935", "#8E24AA", "#3949AB", "#1E88E5",
+        "#00897B", "#43A047", "#FDD835", "#FB8C00",
+        "#6D4C41", "#546E7A"
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+}
+
+
         function getPolygonColor(index) {
   const colors = [
     "#ff1744",
@@ -1220,25 +1255,18 @@ if (!boundaryLayer) {
         onEachFeature: function(feature, layer) {
 
           const districtName =
-            feature.properties?.DISTRICT ||
-            feature.properties?.District ||
-            feature.properties?.NAME ||
-            feature.properties?.name ||
-            "Boundary";
+    feature.properties?.pd_name || "Boundary";
 
           layer.bindTooltip(
-            `<div style="
-                font-weight:900;
-                font-size:13px;
-                letter-spacing:0.5px;">
-                ${districtName}
-             </div>`,
-            {
-              permanent: true,
-              direction: "center",
-              className: "premiumLabel"
-            }
-          );
+  `<div class="premium-boundary-label">
+      ${districtName}
+   </div>`,
+  {
+    permanent: true,
+    direction: "center",
+    className: ""
+  }
+);
 
           layer.on({
             mouseover: function(e) {
