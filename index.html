@@ -1239,7 +1239,7 @@
                 map = L.map('map', { zoomControl: true }).setView([23.5, 87.5], 7);
 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap',
+                    attribution: '©️ OpenStreetMap',
                     maxZoom: 19
                 }).addTo(map);
             
@@ -1256,24 +1256,93 @@
 
 // ---------- PREMIUM POLYGON LAYER ----------
 // ---------- PREMIUM POLYGON LAYER ----------
-// ---------- PREMIUM POLYGON LAYER ----------
+if (!boundaryLayer) {
 
-    
+  fetch("data/boundary.geojson")
+    .then(res => res.json())
+    .then(data => {
+
+      let colorIndex = 0;
+
+      boundaryLayer = L.geoJSON(data, {
+
+        style: function(feature) {
+
+          if (!feature.properties._color) {
+            feature.properties._color = getPolygonColor(colorIndex++);
+          }
+
+          return {
+            color: feature.properties._color,
+            weight: 4,
+            fillColor: feature.properties._color,
+            fillOpacity: 0.22,
+            dashArray: null
+          };
+        },
+
+        onEachFeature: function(feature, layer) {
+
+          const districtName =
+    feature.properties?.pd_name || "Boundary";
+
+          var labelPoint;
+
+if (layer.getBounds) {
+    labelPoint = layer.getBounds().getCenter();
+} else if (layer.getLatLng) {
+    labelPoint = layer.getLatLng();
+}
+
+if (labelPoint) {
+    layer.bindTooltip(districtName || "Boundary", {
+        permanent: true,
+        direction: "center",
+        className: "premium-boundary-float",
+        opacity: 1,
+        interactive: false
+    }).setLatLng(labelPoint);
+}
+
+          layer.on({
+            mouseover: function(e) {
+              e.target.setStyle({
+                weight: 6,
+                fillOpacity: 0.35
+              });
+            },
+            mouseout: function(e) {
+              boundaryLayer.resetStyle(e.target);
+            }
+          });
+
+        }
+
+      }).addTo(map);
+
+      // ✅ IMPORTANT: move these inside here
+      boundaryLayer.bringToBack();
+      if (markers) {
+    markers.bringToFront();
+}
+      
+
+      map.fitBounds(boundaryLayer.getBounds());
+
+    })
+    .catch(err => {
+      console.error("Boundary load error:", err);
+    });
+}
 
     
 
   var toggleBtn = document.getElementById("toggleBoundary");
 
-if (toggleBtn && !toggleBtn.dataset.bound) {
+if (toggleBtn) {
+  toggleBtn.addEventListener("click", function() {
 
-  toggleBtn.dataset.bound = "true";
-
-  toggleBtn.addEventListener("click", function () {
-
-    if (!boundaryLayer) {
-      alert("Boundary not loaded yet");
-      return;
-    }
+    if (!boundaryLayer) return;
 
     if (polygonVisible) {
       map.removeLayer(boundaryLayer);
@@ -1281,7 +1350,7 @@ if (toggleBtn && !toggleBtn.dataset.bound) {
       toggleBtn.style.background =
         "linear-gradient(135deg,#757575,#9e9e9e)";
     } else {
-      boundaryLayer.addTo(map);
+      map.addLayer(boundaryLayer);
       polygonVisible = true;
       toggleBtn.style.background =
         "linear-gradient(135deg,#00bcd4,#1e88e5)";
@@ -1292,66 +1361,6 @@ if (toggleBtn && !toggleBtn.dataset.bound) {
 
                 setTimeout(function () { map.invalidateSize(); }, 300);
             }
-
-            if (!boundaryLayer) {
-
-  fetch("./data/boundary.geojson")
-    .then(res => {
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      return res.json();
-    })
-    .then(data => {
-
-      console.log("Boundary loaded");
-
-      let colorIndex = 0;
-
-      boundaryLayer = L.geoJSON(data, {
-
-        style: function (feature) {
-
-          if (!feature.properties._color) {
-            feature.properties._color = getPolygonColor(colorIndex++);
-          }
-
-          return {
-            color: feature.properties._color,
-            weight: 4,
-            fillColor: feature.properties._color,
-            fillOpacity: 0.22
-          };
-        },
-
-        onEachFeature: function (feature, layer) {
-
-          const districtName =
-            feature.properties?.pd_name || "Boundary";
-
-          var center = layer.getBounds().getCenter();
-
-          layer.bindTooltip(districtName, {
-            permanent: true,
-            direction: "center",
-            className: "premium-boundary-float",
-            interactive: false
-          }).setLatLng(center);
-
-        }
-
-      });
-
-      // ADD TO MAP HERE
-      boundaryLayer.addTo(map);
-      polygonVisible = true;
-
-      boundaryLayer.bringToBack();
-      if (markers) markers.bringToFront();
-
-    })
-    .catch(err => {
-      console.error("Boundary load error:", err);
-    });
-}
 
             if (!uiEventsBound) {
                 uiEventsBound = true;
