@@ -514,6 +514,15 @@
     transition: transform 0.25s ease, font-size 0.25s ease, opacity 0.25s ease;
 }
 
+/* Remove blue focus box on polygon click */
+.leaflet-container path:focus {
+    outline: none !important;
+}
+
+.leaflet-interactive:focus {
+    outline: none !important;
+}
+
 
 
         /* ✅ MOBILE COMPATIBLE MODE */
@@ -1230,6 +1239,7 @@ if (!boundaryLayer) {
       let colorIndex = 0;
 
       boundaryLayer = L.geoJSON(data, {
+        interactive: true,
 
         style: function(feature) {
 
@@ -1247,6 +1257,7 @@ if (!boundaryLayer) {
         },
 
         onEachFeature: function(feature, layer) {
+            layer.options.keyboard = false; // make layer focusable for accessibility
 
   const districtName =
     feature.properties?.pd_name || "Boundary";
