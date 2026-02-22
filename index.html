@@ -485,44 +485,41 @@
             box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16) !important;
         }
 
-        /* ULTRA PREMIUM TRANSPARENT FLOATING PD LABEL */
+        .premium-boundary-float {
+  background: linear-gradient(135deg,#0d47a1,#1976d2);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 14px;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+}
 
-.leaflet-tooltip.premium-boundary-float {
+.premium-boundary-float {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
-}
 
-.leaflet-tooltip.premium-boundary-float::before {
-    display: none !important;
-}
-
-.premium-boundary-float {
     color: #ffffff;
     font-weight: 900;
     font-size: 15px;
     letter-spacing: 1px;
     text-transform: uppercase;
-    text-align: center;
+
     text-shadow:
-        0 2px 6px rgba(0,0,0,0.85),
-        0 0 8px rgba(0,0,0,0.6);
+        0 0 4px rgba(0,0,0,0.9),
+        0 0 8px rgba(0,0,0,0.7),
+        0 2px 6px rgba(0,0,0,0.6);
+
     pointer-events: none;
 }
 
-.premium-boundary-label {
-    background: rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(6px);
-    border: none;
-    color: #111;
-    font-weight: 800;
-    font-size: 14px;
-    padding: 4px 12px;
-    border-radius: 14px;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
+.leaflet-tooltip.premium-boundary-float {
+    transform: scale(1);
+    transition: transform 0.2s ease;
 }
 
 
@@ -1258,33 +1255,45 @@ if (!boundaryLayer) {
 
         onEachFeature: function(feature, layer) {
 
-          const districtName =
+  const districtName =
     feature.properties?.pd_name || "Boundary";
 
-          var labelPoint = layer.getBounds().getCenter();
+  layer.bindTooltip(
+    districtName,
+    {
+      permanent: true,
+      direction: "center",
+      className: "premium-boundary-float"
+    }
+  );
 
-layer.bindTooltip(districtName, {
-    permanent: true,
-    direction: "center",
-    className: "premium-boundary-float",
-    opacity: 1,
-    interactive: false
-}).setLatLng(labelPoint);
+  // 🔥 PREMIUM HOVER EFFECT
+  layer.on("mouseover", function(e) {
 
-          layer.on({
-            mouseover: function(e) {
-              e.target.setStyle({
-                weight: 6,
-                fillOpacity: 0.35
-              });
-            },
-            mouseout: function(e) {
-              boundaryLayer.resetStyle(e.target);
-            }
-          });
+    e.target.setStyle({
+      weight: 6,
+      fillOpacity: 0.35
+    });
 
-        }
+    const tooltipEl = e.target.getTooltip().getElement();
+    if (tooltipEl) {
+      tooltipEl.style.transform = "scale(1.1)";
+    }
 
+  });
+
+  layer.on("mouseout", function(e) {
+
+    boundaryLayer.resetStyle(e.target);
+
+    const tooltipEl = e.target.getTooltip().getElement();
+    if (tooltipEl) {
+      tooltipEl.style.transform = "scale(1)";
+    }
+
+  });
+
+}
       }).addTo(map);
 
       // ✅ IMPORTANT: move these inside here
@@ -1295,19 +1304,6 @@ layer.bindTooltip(districtName, {
       
 
       map.fitBounds(boundaryLayer.getBounds());
-      map.on("zoomend", function () {
-    var currentZoom = map.getZoom();
-
-    boundaryLayer.eachLayer(function (layer) {
-        if (!layer.getTooltip()) return;
-
-        if (currentZoom < 8) {
-            layer.closeTooltip();
-        } else {
-            layer.openTooltip();
-        }
-    });
-});
 
     })
     .catch(err => {
